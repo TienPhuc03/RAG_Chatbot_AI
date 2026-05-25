@@ -6,12 +6,8 @@ COPY src src
 
 RUN mvn -B -DskipTests package
 
-FROM eclipse-temurin:21-jre
+FROM amazoncorretto:21-alpine
 WORKDIR /app
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends wget \
-    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /workspace/target/rag-chatbot-backend-0.0.1-SNAPSHOT.jar app.jar
 
