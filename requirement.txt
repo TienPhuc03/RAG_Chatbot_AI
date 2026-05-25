@@ -1,0 +1,14 @@
+# Python dependencies for embedding-service and ragas-service.
+# Install from the repository root with:
+#   pip install -r requirement.txt
+#
+# Project prerequisites outside pip:
+#   - Java 21 for the Spring Boot backend
+#   - Docker Desktop with Docker Compose for postgres, qdrant, and service containers
+#   - Optional: Maven 3.9+ if running backend locally without Docker
+#
+# Start the full project with:
+#   docker compose up -d --build
+
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
