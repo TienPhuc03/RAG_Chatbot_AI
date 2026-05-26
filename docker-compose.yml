@@ -26,6 +26,11 @@ services:
       - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:6333/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   embedding-service:
     build:
@@ -73,18 +78,15 @@ services:
       SPRING_DATASOURCE_PASSWORD: ragpass
       QDRANT_HOST: qdrant
       QDRANT_PORT: 6333
-      EMBEDDING_SERVICE_URL: http://embedding-service:8001
-      RAGAS_SERVICE_URL: http://ragas-service:8002
-      OLLAMA_BASE_URL: http://host.docker.internal:11434
-      OLLAMA_MODEL: llama3.2:3b
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
+      GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-001}
+      GEMINI_TIMEOUT: ${GEMINI_TIMEOUT:-30s}
+      GEMINI_MAX_RETRIES: ${GEMINI_MAX_RETRIES:-3}
     depends_on:
       postgres:
         condition: service_healthy
       qdrant:
-        condition: service_started
-      embedding-service:
-        condition: service_healthy
-      ragas-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
