@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ConversationRepository extends JpaRepository<Conversation, UUID> {
 
     Optional<Conversation> findBySessionId(String sessionId);
+
+    boolean existsBySessionId(String sessionId);
 }
