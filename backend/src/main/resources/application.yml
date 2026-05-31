@@ -33,9 +33,11 @@ rag:
   vector-store:
     qdrant-host: ${QDRANT_HOST:localhost}
     qdrant-port: ${QDRANT_PORT:6333}
-  services:
-    embedding-url: ${EMBEDDING_SERVICE_URL:http://localhost:8001}
-    ragas-url: ${RAGAS_SERVICE_URL:http://localhost:8002}
-  llm:
-    ollama-base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
-    ollama-model: ${OLLAMA_MODEL:llama3.2:3b}
+
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  chat-model: ${GEMINI_CHAT_MODEL:gemini-2.5-flash}
+  embedding-model: ${GEMINI_EMBEDDING_MODEL:gemini-embedding-001}
+  timeout: ${GEMINI_TIMEOUT:30s}
+  max-retries: ${GEMINI_MAX_RETRIES:3}
+
