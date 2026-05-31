@@ -5,7 +5,7 @@ package com.ragchatbot.domain.model;
  * * @param id Mã định danh duy nhất của câu hỏi (Ví dụ: "Q001").
  * @param question Nội dung câu hỏi người dùng đặt ra.
  * @param groundTruth Đáp án chuẩn xác tuyệt đối được trích xuất từ tài liệu, dùng làm hệ quy chiếu.
- * @param category Phân loại câu hỏi (Ví dụ: "DEFINITION", "COMPARISON", "APPLICATION").
+ * @param category Phân loại câu hỏi phục vụ việc thống kê điểm mạnh/yếu.
  */
 public record TestCase(
         String id,
