@@ -1,3 +1,4 @@
+-- Active: 1780239123840@@127.0.0.1@5432@ragchatbot
 CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE documents (
@@ -67,7 +68,6 @@ CREATE TABLE messages (
 
 CREATE INDEX idx_documents_course_chapter
     ON documents (course_code, chapter_code);
-
 CREATE INDEX idx_chunks_document_chunk_index
     ON chunks (document_id, chunk_index);
 
