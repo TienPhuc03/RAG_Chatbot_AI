@@ -14,14 +14,14 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
-import org.hibernate.annotations.UuidGenerator;
+// import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "chunks")
 public class Chunk {
 
     @Id
-    @UuidGenerator
+    @Column(name = "chunks_id")
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -37,7 +37,7 @@ public class Chunk {
     @Column(name = "page_number")
     private Integer pageNumber;
 
-    @Column(name = "token_count")
+    @Column(name = "token_count", nullable = false)
     private Integer tokenCount;
 
     @Enumerated(EnumType.STRING)
@@ -111,8 +111,8 @@ public class Chunk {
         return chunkingStrategy;
     }
 
-    public void setChunkingStrategy(ChunkingStrategy chunkingStrategy) {
-        this.chunkingStrategy = chunkingStrategy;
+    public void setChunkingStrategy(ChunkingStrategy fixedSize) {
+        this.chunkingStrategy = fixedSize;
     }
 
     public EmbeddingModel getEmbeddingModel() {

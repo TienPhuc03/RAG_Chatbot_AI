@@ -21,6 +21,7 @@ print("Tải mô hình thành công!")
 class EmbedRequest(BaseModel):
     texts: List[str]
 
+# 1. API Endpoint xử lý đơn lẻ hoặc hàng loạt (gộp chung /embed theo thiết kế FastAPI thông thường)
 @app.post("/embed")
 async def get_embeddings(request: EmbedRequest):
     """

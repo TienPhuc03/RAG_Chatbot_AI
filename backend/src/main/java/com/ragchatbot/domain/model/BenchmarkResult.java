@@ -13,14 +13,14 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
-import org.hibernate.annotations.UuidGenerator;
+// import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "benchmark_results")
 public class BenchmarkResult {
 
     @Id
-    @UuidGenerator
+    @Column(name = "benchmark_results_id")
     private UUID id;
 
     @Enumerated(EnumType.STRING)
