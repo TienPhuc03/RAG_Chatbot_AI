@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 .idea/
 *.iml
+*.md
+notes/test-files/
