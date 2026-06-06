@@ -1,6 +1,5 @@
 -- Active: 1780239123840@@127.0.0.1@5432@ragchatbot@public
 
-
 CREATE TABLE public.benchmark_results (
     benchmark_results_id UUID PRIMARY KEY,
     experiment_type VARCHAR(50) NOT NULL,
