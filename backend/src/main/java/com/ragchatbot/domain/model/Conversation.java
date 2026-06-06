@@ -8,14 +8,14 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
-import org.hibernate.annotations.UuidGenerator;
+// import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "conversations")
 public class Conversation {
 
     @Id
-    @UuidGenerator
+    @Column(name = "conversations_id")
     private UUID id;
 
     @Column(name = "session_id", nullable = false, unique = true, length = 100)
