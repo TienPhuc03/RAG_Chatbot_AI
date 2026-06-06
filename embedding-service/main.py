@@ -1,15 +1,23 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
+from sentence_transformers import SentenceTransformer
+import uvicorn
 
-# Khởi tạo ứng dụng FastAPI đúng chuẩn đặc tả của nhóm
+# Khởi tạo FastAPI
 app = FastAPI(
-    title="Embedding Service - Week 1",
-    description="API stub phục vụ kết nối hệ thống và test contract tuần 1",
-    version="1.0.0"
+    title="Embedding Service - Week 2 (REAL)",
+    description="API chạy mô hình multilingual-e5-base thật sự",
+    version="2.0.0"
 )
 
-# Cấu trúc dữ liệu đầu vào (Request Body) nhận một danh sách các câu văn
+# Quy tắc nhóm: Comment giải thích rõ ràng chức năng
+# Tải mô hình AI thật từ HuggingFace về bộ nhớ máy (chỉ load 1 lần duy nhất khi khởi động)
+print("Đang tải mô hình multilingual-e5-base... Vui lòng đợi...")
+model = SentenceTransformer('intfloat/multilingual-e5-base')
+print("Tải mô hình thành công!")
+
+# Cấu trúc dữ liệu đầu vào đúng chuẩn List[str] của Jira
 class EmbedRequest(BaseModel):
     texts: List[str]
 
@@ -17,39 +25,25 @@ class EmbedRequest(BaseModel):
 @app.post("/embed")
 async def get_embeddings(request: EmbedRequest):
     """
-    API tiếp nhận danh sách văn bản và trả về danh sách các vector giả lập (stub 0.0)
-    Đầu vào: {"texts": ["câu 1", "câu 2"]} -> Đầu ra: [[0.0, ...], [0.0, ...]]
+    API tiếp nhận danh sách văn bản, chạy qua mô hình AI thật 
+    và trả về danh sách các vector số thực sự (List[List[float]])
     """
     try:
         if not request.texts:
-            raise HTTPException(status_code=400, detail="Danh sách văn bản 'texts' không được để trống")
+            raise HTTPException(status_code=400, detail="Danh sách 'texts' không được trống")
         
-        # Tạo vector giả lập stub 0.0 cố định gồm 5 phần tử để giữ cấu trúc mảng 2 chiều List[List[float]]
-        stub_vector = [0.0, 0.0, 0.0, 0.0, 0.0]
+        # Chạy mô hình thật để chuyển chữ thành các dãy số (Embedding Vectors)
+        embeddings = model.encode(request.texts)
         
-        # Duyệt qua từng câu văn trong request để trả về số lượng vector tương ứng
-        result = [stub_vector for _ in request.texts]
-        return result
+        # Chuyển đổi định dạng numpy array của mô hình về List truyền thống của Python để trả về JSON
+        return embeddings.tolist()
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi xử lý hệ thống: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Lỗi xử lý mô hình AI: {str(e)}")
 
-# 2. API Endpoint /embed-batch (Viết riêng một router nữa để khớp hoàn toàn 100% với Deliverable trên Jira)
-@app.post("/embed-batch")
-async def get_embeddings_batch(request: EmbedRequest):
-    """
-    API phục vụ xử lý danh sách lớn (batch) theo đúng task W1-21
-    """
-    return await get_embeddings(request)
-
-# 3. API Endpoint kiểm tra trạng thái hoạt động (Health Check)
 @app.get("/health")
 async def health_check():
-    """
-    API thông báo trạng thái hoạt động của dịch vụ nhúng
-    """
-    return {
-        "status": "healthy",
-        "week": 1,
-        "owner": "Gia Bảo"
-    }
+    return {"status": "healthy", "week": 2, "model": "multilingual-e5-base"}
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
