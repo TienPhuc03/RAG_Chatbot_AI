@@ -4,4 +4,6 @@ __pycache__/
 .idea/
 *.iml
 *.md
+*env
 notes/test-files/
+*.env
