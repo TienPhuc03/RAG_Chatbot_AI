@@ -7,6 +7,9 @@ import com.ragchatbot.application.usecase.chat.SendMessageUseCase;
 import com.ragchatbot.domain.model.Message;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+
+
 import java.util.List;
 
 @RestController
@@ -29,6 +32,7 @@ public class ChatController {
      */
     @PostMapping("/message")
     public ChatResponse sendMessage(
+            @Valid
             @RequestBody ChatRequest request
     ) {
         return sendMessageUseCase.execute(request);
