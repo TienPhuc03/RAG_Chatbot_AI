@@ -8,14 +8,14 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
-import org.hibernate.annotations.UuidGenerator;
+// import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "documents")
 public class Document {
 
     @Id
-    @UuidGenerator
+    @Column(name = "documents_id")
     private UUID id;
 
     @Column(nullable = false, length = 255)
@@ -24,10 +24,10 @@ public class Document {
     @Column(name = "source_file_name", nullable = false, length = 255)
     private String sourceFileName;
 
-    @Column(name = "content_type", nullable = false, length = 100)
+    @Column(name = "content_type", nullable = false, length = 255)
     private String contentType;
 
-    @Column(nullable = false, unique = true, length = 128)
+    @Column(nullable = false, unique = true, length = 255)
     private String checksum;
 
     @Column(name = "course_code", nullable = false, length = 50)
@@ -45,7 +45,7 @@ public class Document {
     @Column(name = "indexed_at")
     private Instant indexedAt;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)

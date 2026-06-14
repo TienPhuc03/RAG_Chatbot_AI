@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 .idea/
 *.iml
+*.md
+*env
+notes/test-files/
+*.env

@@ -28,7 +28,7 @@ class FixedSizeChunkingServiceTest {
         assertThat(chunks).isNotEmpty();
         assertThat(chunks.size()).isGreaterThan(1);
 
-        // 2. [Yêu cầu: Không mất ký tự] - Ghép nội dung các chunk lại (sau khi loại trừ khoảng gối đầu)
+        // 2. [Yêu cầu: Không mất ký tự] - Ghép nội dung các chunk lại (sau khi loại bỏ khoảng gối đầu)
         StringBuilder fullTextBuilder = new StringBuilder();
         for (int i = 0; i < chunks.size(); i++) {
             String content = chunks.get(i).content();
@@ -65,22 +65,51 @@ class FixedSizeChunkingServiceTest {
 
     @Test
     void testVietnameseToneMarks() {
-        // [Yêu cầu: Tiếng Việt giữ nguyên dấu]
-        String vietnameseText = "Học lập trình Java Spring Boot, tiếng Việt giữ nguyên dấu hoàn toàn.";
+    // Yêu cầu: tiếng Việt phải được giữ nguyên, không mất dữ liệu sau chunking
+    String vietnameseText =
+            "Học lập trình Java Spring Boot, tiếng Việt giữ nguyên dấu hoàn toàn.";
 
-        // chunkSize=100 để tránh cắt giữa chữ tiếng Việt
-        ChunkingOptions options = new ChunkingOptions(100, 5);
+    ChunkingOptions options = new ChunkingOptions(50, 5);
 
-        List<ChunkDraft> chunks = chunkingService.chunk(vietnameseText, ChunkingStrategy.FIXED_SIZE, options);
+    List<ChunkDraft> chunks =
+            chunkingService.chunk(
+                    vietnameseText,
+                    ChunkingStrategy.FIXED_SIZE,
+                    options);
 
-        assertThat(chunks).isNotEmpty();
+    // Có tạo ra chunk
+    assertThat(chunks).isNotEmpty();
+    assertThat(chunks.size()).isGreaterThan(1);
 
-        // Ghép toàn bộ nội dung lại để kiểm tra không mất ký tự
-        String combined = chunks.stream()
-            .map(ChunkDraft::content)
-            .reduce("", String::concat);
+    // Ghép lại nội dung sau khi loại bỏ overlap
+    StringBuilder reconstructed = new StringBuilder();
 
-        assertThat(combined).contains("lập trình");
-        assertThat(combined).contains("giữ nguyên");
+    for (int i = 0; i < chunks.size(); i++) {
+        String content = chunks.get(i).content();
+
+        if (i == 0) {
+            reconstructed.append(content);
+        } else {
+            reconstructed.append(content.substring(5)); // overlap = 5
+        }
     }
+
+    // Không mất dữ liệu tiếng Việt
+    assertThat(reconstructed.toString())
+            .isEqualTo(vietnameseText);
+
+    // Kiểm tra các cụm từ tiếng Việt vẫn tồn tại
+    assertThat(reconstructed.toString())
+            .contains("Học");
+
+    assertThat(reconstructed.toString())
+            .contains("tiếng Việt");
+
+    assertThat(reconstructed.toString())
+            .contains("giữ nguyên");
+
+    assertThat(reconstructed.toString())
+            .contains("dấu hoàn toàn");
+}
+
 }

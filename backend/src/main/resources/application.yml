@@ -1,4 +1,9 @@
 spring:
+  mvc:
+    hiddenmethod:
+      filter:
+        #cho phép form HTML dùng DELETE/PUT qua hidden field _method
+        enabled: true
   application:
     name: rag-chatbot-backend
   datasource:
@@ -40,4 +45,3 @@ gemini:
   embedding-model: ${GEMINI_EMBEDDING_MODEL:gemini-embedding-001}
   timeout: ${GEMINI_TIMEOUT:30s}
   max-retries: ${GEMINI_MAX_RETRIES:3}
-

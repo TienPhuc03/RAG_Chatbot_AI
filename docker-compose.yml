@@ -27,7 +27,7 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:6333/healthz || exit 1"]
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/6333"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -78,7 +78,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ragpass
       QDRANT_HOST: qdrant
       QDRANT_PORT: 6333
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
       GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-001}
       GEMINI_TIMEOUT: ${GEMINI_TIMEOUT:-30s}

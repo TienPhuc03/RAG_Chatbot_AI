@@ -1,0 +1,62 @@
+[
+  {
+    "id": "Q001",
+    "question": "RDBMS là viết tắt của từ gì và nó có chức năng chính là gì?",
+    "groundTruth": "RDBMS là viết tắt của Relational Database Management System (Hệ quản trị cơ sở dữ liệu quan hệ). Đây là một phần mềm hệ thống dùng để tạo, duy trì và quản lý các cơ sở dữ liệu theo mô hình quan hệ (dữ liệu lưu dưới dạng các bảng có liên kết với nhau).",
+    "category": "DEFINITION"
+  },
+  {
+    "id": "Q002",
+    "question": "Giải thích khái niệm Khóa chính (Primary Key) và Khóa ngoại (Foreign Key) trong database.",
+    "groundTruth": "Khóa chính (Primary Key) là một cột hoặc tập hợp các cột xác định duy nhất mỗi bản ghi trong một bảng, không được phép chứa giá trị NULL. Khóa ngoại (Foreign Key) là một cột trong bảng này dùng để tham chiếu đến Khóa chính của một bảng khác, nhằm đảm bảo tính toàn vẹn tham chiếu giữa hai bảng.",
+    "category": "DEFINITION"
+  },
+  {
+    "id": "Q003",
+    "question": "Giao dịch (Transaction) trong cơ sở dữ liệu là gì? Nêu 4 tính chất của nó.",
+    "groundTruth": "Giao dịch (Transaction) là một nhóm các thao tác cơ sở dữ liệu được thực thi như một đơn vị công việc duy nhất. Một giao dịch phải đảm bảo 4 tính chất ACID bao gồm: Atomicity (Tính nguyên tử), Consistency (Tính nhất quán), Isolation (Tính độc lập) và Durability (Tính bền vững).",
+    "category": "DEFINITION"
+  },
+  {
+    "id": "Q004",
+    "question": "Thế nào là hiện tượng bất thường cập nhật (Update Anomaly)?",
+    "groundTruth": "Bất thường cập nhật là các lỗi logic hoặc sự thiếu nhất quán dữ liệu xảy ra khi thực hiện thao tác Thêm, Sửa hoặc Xóa trên một bảng chưa được chuẩn hóa. Nguyên nhân thường do dữ liệu bị dư thừa, khiến việc cập nhật một thông tin phải lặp lại ở nhiều nơi khác nhau.",
+    "category": "DEFINITION"
+  },
+  {
+    "id": "Q005",
+    "question": "Lệnh INNER JOIN khác gì so với lệnh LEFT JOIN?",
+    "groundTruth": "INNER JOIN chỉ lấy ra và trả về các dòng dữ liệu có sự trùng khớp điều kiện ở cả hai bảng. Trong khi đó, LEFT JOIN sẽ trả về toàn bộ dữ liệu của bảng bên trái và các dòng khớp của bảng bên phải; nếu bảng bên phải không có dòng nào khớp, kết quả trả về ở các cột của bảng phải sẽ là NULL.",
+    "category": "COMPARISON"
+  },
+  {
+    "id": "Q006",
+    "question": "Sự khác nhau cơ bản giữa lệnh DELETE và TRUNCATE là gì?",
+    "groundTruth": "DELETE là lệnh thao tác dữ liệu (DML), xóa từng dòng, có thể dùng điều kiện WHERE, có thể khôi phục (Rollback) và kích hoạt được Trigger. TRUNCATE là lệnh định nghĩa dữ liệu (DDL), xóa toàn bộ bảng bằng cách giải phóng vùng nhớ, chạy nhanh hơn, không dùng được WHERE, thường không thể Rollback và không kích hoạt Trigger.",
+    "category": "COMPARISON"
+  },
+  {
+    "id": "Q007",
+    "question": "Phân biệt Clustered Index và Non-Clustered Index.",
+    "groundTruth": "Clustered Index sắp xếp và lưu trữ dữ liệu vật lý của bảng theo cấu trúc index, do đó mỗi bảng chỉ có tối đa 1 Clustered Index (thường là Khóa chính). Non-Clustered Index lưu trữ một cấu trúc cây tách biệt với dữ liệu vật lý, chứa các con trỏ trỏ đến vị trí dữ liệu thực tế, do đó một bảng có thể tạo được nhiều Non-Clustered Index.",
+    "category": "COMPARISON"
+  },
+  {
+    "id": "Q008",
+    "question": "Khi thiết kế CSDL cho một phần mềm quản lý khách sạn, mối quan hệ giữa bảng 'Khách hàng' và bảng 'Phòng' là gì và cách cài đặt như thế nào?",
+    "groundTruth": "Mối quan hệ giữa Khách hàng và Phòng là quan hệ nhiều-nhiều (n-n), vì một khách hàng có thể thuê nhiều phòng và một phòng có thể được nhiều khách hàng thuê ở các thời điểm khác nhau. Để cài đặt trong CSDL quan hệ, phải tách ra bằng cách tạo một bảng trung gian (ví dụ bảng 'DatPhong') chứa 2 khóa ngoại trỏ về khóa chính của 2 bảng trên.",
+    "category": "APPLICATION"
+  },
+  {
+    "id": "Q009",
+    "question": "Bảng dữ liệu nhân viên của mình có hơn 1 triệu bản ghi, khi chạy câu lệnh SELECT tìm kiếm theo cột 'Tên' thì web load rất chậm. Mình phải xử lý thế nào?",
+    "groundTruth": "Cần tạo một Non-Clustered Index (Chỉ mục không phân cụm) trên cột 'Tên' của bảng nhân viên. Việc này giúp hệ quản trị cơ sở dữ liệu dò tìm dữ liệu thông qua cấu trúc cây B-Tree với tốc độ O(log n) thay vì phải quét toàn bộ từ đầu đến cuối bảng (Full Table Scan).",
+    "category": "APPLICATION"
+  },
+  {
+    "id": "Q010",
+    "question": "Nếu hai transaction đang chạy song song mà cùng khóa dữ liệu của nhau dẫn đến việc cả hai bị treo vô thời hạn thì đó là lỗi gì? Hệ thống xử lý nó ra sao?",
+    "groundTruth": "Lỗi này được gọi là Deadlock (Tắc nghẽn). Khi xảy ra, hệ quản trị cơ sở dữ liệu sẽ tự động phát hiện và chọn một trong hai giao dịch làm nạn nhân (victim). Giao dịch nạn nhân sẽ bị ép Rollback (hủy bỏ) để nhả khóa, cho phép giao dịch còn lại tiếp tục thực thi thành công.",
+    "category": "APPLICATION"
+  }
+]
