@@ -34,6 +34,7 @@ public class SwaggerConfig {
                 .externalDocs(
                         new ExternalDocumentation()
                                 .description("Project Documentation")
+                                .url("https://github.com/your-team/rag-chatbot")
                 );
     }
 }
