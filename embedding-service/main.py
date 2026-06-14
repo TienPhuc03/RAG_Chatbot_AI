@@ -1,49 +1,79 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from sentence_transformers import SentenceTransformer
 import uvicorn
 
+# [W3-14] Import service BgeM3 do Gia Bảo cài đặt
+from bge_m3_embedding_service import BgeM3EmbeddingService
+
 # Khởi tạo FastAPI
 app = FastAPI(
-    title="Embedding Service - Week 2 (REAL)",
-    description="API chạy mô hình multilingual-e5-base thật sự",
-    version="2.0.0"
+    title="Embedding Service - Week 3",
+    description="API chạy đa mô hình nhúng (E5-Base & BGE-M3)",
+    version="3.0.0"
 )
 
-# Quy tắc nhóm: Comment giải thích rõ ràng chức năng
-# Tải mô hình AI thật từ HuggingFace về bộ nhớ máy (chỉ load 1 lần duy nhất khi khởi động)
-print("Đang tải mô hình multilingual-e5-base... Vui lòng đợi...")
-model = SentenceTransformer('intfloat/multilingual-e5-base')
-print("Tải mô hình thành công!")
+# --- KHỞI TẠO CÁC MÔ HÌNH NHÚNG ---
+# 1. Mô hình cũ tuần 2 (Mặc định)
+print("Đang tải mô hình chính multilingual-e5-base... Vui lòng đợi...")
+default_model = SentenceTransformer('intfloat/multilingual-e5-base')
+print("Tải mô hình mặc định thành công!")
 
-# Cấu trúc dữ liệu đầu vào đúng chuẩn List[str] của Jira
+# 2. [W3-14] Khởi tạo BgeM3EmbeddingService (Chỉ load mô hình khi hệ thống chạy lên)
+print("Đang khởi tạo dịch vụ BGE-M3 Embedding Service...")
+bge_m3_service = BgeM3EmbeddingService()
+print("Khởi tạo dịch vụ BGE-M3 thành công!")
+
+
+# Cấu trúc dữ liệu đầu vào (Bổ sung thêm tham số model_name để làm Factory phân tách)
 class EmbedRequest(BaseModel):
     texts: List[str]
+    model_name: Optional[str] = "E5_BASE"  # Nếu không truyền, mặc định chạy mô hình cũ
 
-# 1. API Endpoint xử lý đơn lẻ hoặc hàng loạt (gộp chung /embed theo thiết kế FastAPI thông thường)
+
+# API Endpoint xử lý trích xuất Vector theo cấu trúc Factory điều kiện
 @app.post("/embed")
 async def get_embeddings(request: EmbedRequest):
     """
-    API tiếp nhận danh sách văn bản, chạy qua mô hình AI thật 
-    và trả về danh sách các vector số thực sự (List[List[float]])
+    API tiếp nhận danh sách văn bản và tên mô hình nhúng, 
+    chạy qua Factory để điều phối và trả về danh sách vector số thực sự.
     """
     try:
         if not request.texts:
             raise HTTPException(status_code=400, detail="Danh sách 'texts' không được trống")
         
-        # Chạy mô hình thật để chuyển chữ thành các dãy số (Embedding Vectors)
-        embeddings = model.encode(request.texts)
+        # --- [W3-14] ĐÓNG VAI TRÒ LÀM EMBEDDING SERVICE FACTORY ---
+        selected_model = request.model_name.upper().strip() if request.model_name else "E5_BASE"
         
-        # Chuyển đổi định dạng numpy array của mô hình về List truyền thống của Python để trả về JSON
-        return embeddings.tolist()
-        
+        if selected_model == "BGE_M3":
+            # Gọi service xử lý trích xuất vector 1024-dim của Bảo
+            return bge_m3_service.get_embeddings(request.texts)
+            
+        elif selected_model == "E5_BASE":
+            # Chạy mô hình mặc định tuần 2 của nhóm
+            embeddings = default_model.encode(request.texts)
+            return embeddings.tolist()
+            
+        else:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Hệ thống chưa hỗ trợ dòng mô hình nhúng: {request.model_name}"
+            )
+            
+    except HTTPException as http_ex:
+        raise http_ex
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi xử lý mô hình AI: {str(e)}")
 
+
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "week": 2, "model": "multilingual-e5-base"}
+    return {
+        "status": "healthy", 
+        "week": 3, 
+        "supported_models": ["E5_BASE", "BGE_M3"]
+    }
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

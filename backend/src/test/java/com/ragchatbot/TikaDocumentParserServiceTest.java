@@ -1,15 +1,15 @@
 package com.ragchatbot;
 
-import com.ragchatbot.domain.port.ParsedDocument;
-import com.ragchatbot.infrastructure.parsing.DocumentParseException;
-import com.ragchatbot.infrastructure.parsing.TikaDocumentParserService;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.io.InputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.Test;
+
+import com.ragchatbot.domain.port.ParsedDocument;
+import com.ragchatbot.infrastructure.parsing.DocumentParseException;
+import com.ragchatbot.infrastructure.parsing.TikaDocumentParserService;
 
 class TikaDocumentParserServiceTest {
 
@@ -84,4 +84,44 @@ class TikaDocumentParserServiceTest {
             service.parse(minimalPdf, "scan.pdf", "application/pdf")
         ).isInstanceOf(DocumentParseException.class);
     }
+    /*
+ * Kiểm tra message lỗi tiếng Việt khi parse PDF scan (toàn ảnh).
+ * FE dùng message này để hiển thị hướng dẫn cho người dùng.
+ */
+@Test
+void throwsVietnameseMessageForScannedPdf() {
+    //PDF tối thiểu, không có text content — mô phỏng PDF scan
+    byte[] minimalPdf = "%PDF-1.4\n%%EOF".getBytes();
+
+    assertThatThrownBy(() ->
+        service.parse(minimalPdf, "scan.pdf", "application/pdf")
+    )
+    .isInstanceOf(DocumentParseException.class)
+    //message phải chứa "PDF dạng ảnh" để FE hiển thị hướng dẫn đúng
+    .hasMessageContaining("PDF dạng ảnh");
+}
+
+/*
+ * Kiểm tra PPTX có hình không crash JVM.
+ * Tika xử lý được → rawText không null.
+ * PPTX toàn hình → ném DocumentParseException, không crash.
+ */
+@Test
+void parsesPptxWithImageSlideDoesNotCrash() throws Exception {
+    byte[] content = loadTestFile("sample-slide.pptx");
+
+    try {
+        ParsedDocument result = service.parse(
+            content,
+            "sample-slide.pptx",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        );
+        //PPTX có text: parse thành công
+        assertThat(result.rawText()).isNotNull();
+
+    } catch (DocumentParseException e) {
+        //PPTX toàn hình: ném đúng exception, không crash JVM
+        assertThat(e).isInstanceOf(DocumentParseException.class);
+    }
+}
 }

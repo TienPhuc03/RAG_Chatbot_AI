@@ -66,7 +66,7 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
         document.setCourseName("Lap trinh Java");
         document.setChapterCode("CH1");
         document.setChapterTitle("Tong quan");
-
+        
         Document savedDocument = documentRepository.saveAndFlush(document);
 
         Chunk chunk = new Chunk();
