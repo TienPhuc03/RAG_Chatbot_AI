@@ -1,15 +1,10 @@
 package com.ragchatbot.domain.model;
 
-import com.ragchatbot.domain.enums.ChunkingStrategy;
 import com.ragchatbot.domain.enums.EmbeddingModel;
+import com.ragchatbot.domain.enums.ChunkingStrategy;
 import com.ragchatbot.domain.enums.ExperimentType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -21,6 +16,7 @@ public class BenchmarkResult {
 
     @Id
     @Column(name = "benchmark_results_id")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Enumerated(EnumType.STRING)

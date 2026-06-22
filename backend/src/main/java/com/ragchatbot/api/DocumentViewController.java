@@ -1,15 +1,19 @@
 package com.ragchatbot.api;
 
-import com.ragchatbot.application.usecase.document.GetDocumentsUseCase;
-import com.ragchatbot.domain.model.Document;
-import com.ragchatbot.infrastructure.persistence.ChunkRepository;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.ragchatbot.application.usecase.document.GetDocumentsUseCase;
+import com.ragchatbot.domain.model.Document;
+import com.ragchatbot.infrastructure.persistence.ChunkRepository;
 
 /**
  * Controller render trang HTML quản lý tài liệu (Thymeleaf).
@@ -60,5 +64,12 @@ public class DocumentViewController {
         model.addAttribute("chunkCounts", chunkCounts);
 
         return "documents";
+    }
+    /*
+     * Serve trang upload tại /documents/upload
+     */
+    @GetMapping("/upload")
+    public String uploadPage() {
+        return "documents/upload";
     }
 }

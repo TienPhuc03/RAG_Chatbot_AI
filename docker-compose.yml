@@ -7,6 +7,8 @@ services:
       POSTGRES_DB: ragchatbot
       POSTGRES_USER: raguser
       POSTGRES_PASSWORD: ragpass
+      POSTGRES_HOST_AUTH_METHOD: trust
+
     ports:
       - "5432:5432"
     volumes:
@@ -43,7 +45,11 @@ services:
     environment:
       MODEL_NAME: intfloat/multilingual-e5-base
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health')\""]
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:8001/health'')"',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -59,7 +65,11 @@ services:
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8002/health')\""]
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:8002/health'')"',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -89,7 +99,11 @@ services:
       qdrant:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:8080/actuator/health || exit 1",
+        ]
       interval: 15s
       timeout: 5s
       retries: 5

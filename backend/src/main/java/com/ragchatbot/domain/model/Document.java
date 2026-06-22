@@ -1,13 +1,18 @@
 package com.ragchatbot.domain.model;
 
+import java.time.Instant;
+import java.util.UUID;
+
+import com.ragchatbot.domain.enums.DocumentStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import java.time.Instant;
-import java.util.UUID;
 // import org.hibernate.annotations.UuidGenerator;
 
 @Entity
@@ -161,4 +166,14 @@ public class Document {
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    //khởi tạo mặc định là PENDING khi mới upload lên
+    private DocumentStatus status = DocumentStatus.PENDING;
+
+    //gette: lấy ra trạng thái hiện tại của tài liệu
+    public DocumentStatus getStatus() { return status; }
+    //setter: cập nhật trạng thái mới cho tài liệu
+    public void setStatus(DocumentStatus status) { this.status = status; }
 }
