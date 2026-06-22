@@ -6,7 +6,8 @@ package com.ragchatbot.domain.enums;
  *FE polling mỗi 2s dùng enum này để hiển thị badge màu.
  */
 public enum DocumentStatus {
-    PROCESSING,
-    INDEXED,
-    FAILED
+    PENDING,     //vừa upload xong, chưa xử lý
+    PROCESSING,  //đang parse + chunk + index
+    INDEXED,     //hoàn thành, có thể truy vấn
+    FAILED       //có lỗi trong quá trình xử lý
 }
