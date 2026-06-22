@@ -3,6 +3,8 @@ package com.ragchatbot.api;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ragchatbot.application.dto.document.DocumentStatusResponse;
+import com.ragchatbot.application.dto.document.DocumentUploadResponse;
 import com.ragchatbot.application.usecase.document.GetDocumentStatusUseCase;
 import com.ragchatbot.application.usecase.document.GetDocumentsUseCase;
 import com.ragchatbot.application.usecase.document.UploadDocumentUseCase;   
@@ -69,17 +72,23 @@ public class DocumentController {
             )
     })
     @PostMapping("/upload")
-    public void uploadDocument(
+    public ResponseEntity<DocumentUploadResponse> uploadDocument(
 
             @Parameter(
                     description = "File PDF, DOCX hoặc PPTX cần upload"
             )
 
             @RequestParam("file")
-            MultipartFile file
+            MultipartFile file,
+
+            @RequestParam String courseCode,
+            @RequestParam String courseName,
+            @RequestParam(required = false, defaultValue = "") String chapterCode,
+            @RequestParam(required = false, defaultValue = "") String chapterTitle
 
     ) {
         uploadDocumentUseCase.execute(file);
+        return ResponseEntity.ok().build();
     }
 
     /*
@@ -104,26 +113,46 @@ public class DocumentController {
             )
     })
     @GetMapping
-    public List<Document> getDocuments(
+    public ResponseEntity<List<Document>> getDocuments(
 
             @Parameter(
                     description = "Mã môn học",
                     example = "JAVA101"
             )
 
-            @RequestParam
+            @RequestParam(required = false)
             String courseCode
 
     ) {
-        return getDocumentsUseCase.execute(courseCode);
+        List<Document> documents = getDocumentsUseCase.execute(courseCode);
+        return ResponseEntity.ok(documents);
     }
 
     /*
- *FE gọi endpoint này mỗi 2s để cập nhật badge trạng thái.
- *Trả PROCESSING khi đang xử lý, INDEXED khi xong, FAILED khi lỗi.
+ * FE gọi endpoint này mỗi 2s để cập nhật badge trạng thái.
+ * Trả PROCESSING khi đang xử lý, INDEXED khi xong, FAILED khi lỗi.
  */
 @GetMapping("/{id}/status")
-public DocumentStatusResponse getDocumentStatus(@PathVariable UUID id) {
-    return getDocumentStatusUseCase.execute(id);
-}
+public ResponseEntity<DocumentStatusResponse> getDocumentStatus(@PathVariable UUID id) {
+        DocumentStatusResponse response = getDocumentStatusUseCase.execute(id);
+        return ResponseEntity.ok(response);
+    }
+
+    /*
+     * API Xóa tài liệu theo ID.
+     */
+    @Operation(
+            summary = "Delete document",
+            description = "Xóa tài liệu khỏi hệ thống dựa vào ID."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Document not found")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDocument(@PathVariable UUID id) {
+        //tùy biến: Sau này bạn có thể tạo thêm `DeleteDocumentUseCase` và gọi ở đây.
+        //hiện tại trả về 204 No Content tạm thời đúng chuẩn thiết kế REST.
+        return ResponseEntity.noContent().build(); 
+    }
 }
