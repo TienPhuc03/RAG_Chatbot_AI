@@ -28,7 +28,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers(disabledWithoutDocker = true)
+// @Testcontainers(disabledWithoutDocker = true)
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class PersistenceMappingTest extends PostgresIntegrationTestSupport {
@@ -113,7 +113,7 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
     @Test
     void savesBenchmarkResult() {
         BenchmarkResult benchmarkResult = new BenchmarkResult();
-        benchmarkResult.setId(UUID.randomUUID());
+        // benchmarkResult.setId(UUID.randomUUID());
         benchmarkResult.setExperimentType(ExperimentType.RAG);
         benchmarkResult.setChunkingStrategy(ChunkingStrategy.SEMANTIC);
         benchmarkResult.setEmbeddingModel(EmbeddingModel.BGE_M3);
@@ -144,6 +144,8 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
         document.setSourceFileName("rag.pdf");
         document.setContentType("application/pdf");
         document.setChecksum("checksum-111");
+        document.setCourseCode("JAVA101");
+        document.setCourseName("Lap trinh Java");
         Document savedDoc = documentRepository.saveAndFlush(document);
 
         // 2. Tạo Chunk mẫu

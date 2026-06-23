@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers(disabledWithoutDocker = true)
+// @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
 class ApplicationSmokeTest extends PostgresIntegrationTestSupport {
 

@@ -24,7 +24,7 @@ public class Message {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "conversation_id", nullable = false)
+    @JoinColumn(name = "conversations_id", nullable = false)
     private Conversation conversation;
 
     @Column(name = "sequence_no", nullable = false)
@@ -37,6 +37,8 @@ public class Message {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(name = "citation_payload", columnDefinition = "TEXT")
+    private String citationPayload;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -85,6 +87,11 @@ public class Message {
     public void setContent(String content) {
         this.content = content;
     }
+
+    public String getCitationPayload() {
+        return citationPayload;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -93,7 +100,7 @@ public class Message {
         this.createdAt = createdAt;
     }
 
-    public void setCitationPayload(String string) {
-        throw new UnsupportedOperationException("Unimplemented method 'setCitationPayload'");
+    public void setCitationPayload(String citationPayload) {
+        this.citationPayload = citationPayload;
     }
 }

@@ -53,7 +53,6 @@ public class ChunkingServiceFactory {
     /**
      * Xác định ChunkingStrategy của một service dựa trên kiểu class.
      * Mỗi implementation ánh xạ 1-1 với 1 strategy trong enum.
-     * HIERARCHICAL hiện chưa có implementation → chưa map, sẽ bổ sung sau.
      */
     private ChunkingStrategy resolveStrategy(ChunkingService service) {
         if (service instanceof FixedSizeChunkingService) {
@@ -61,6 +60,9 @@ public class ChunkingServiceFactory {
         }
         if (service instanceof SemanticChunkingService) {
             return ChunkingStrategy.SEMANTIC;
+        }
+        if (service instanceof HierarchicalChunkingService){
+            return ChunkingStrategy.HIERARCHICAL;
         }
         throw new IllegalArgumentException(
             "Không thể xác định ChunkingStrategy cho service: " + service.getClass().getSimpleName()

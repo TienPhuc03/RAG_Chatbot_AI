@@ -1,7 +1,12 @@
 package com.ragchatbot.infrastructure.parsing;
 
-import com.ragchatbot.domain.port.DocumentParserService;
-import com.ragchatbot.domain.port.ParsedDocument;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.parser.AutoDetectParser;
@@ -9,11 +14,10 @@ import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.BodyContentHandler;
 import org.springframework.stereotype.Service;
+import org.xml.sax.SAXException;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
+import com.ragchatbot.domain.port.DocumentParserService;
+import com.ragchatbot.domain.port.ParsedDocument;
 
 /**
  * Parse PDF, DOCX, PPTX thành plain text dùng Apache Tika.
@@ -48,7 +52,11 @@ public class TikaDocumentParserService implements DocumentParserService {
         try (InputStream stream = new ByteArrayInputStream(content)) {
             // Thực hiện parse — text ghi vào handler, metadata ghi vào metadata object.
             parser.parse(stream, handler, metadata, context);
-        } catch (Exception e) {
+        } catch (TikaException | IOException | SAXException e) {
+            // Kiểm tra nếu lỗi do file PDF scan hoặc lỗi TIKA-198
+           if (e.getMessage() != null && e.getMessage().contains("TIKA-198")) {
+                throw new DocumentParseException("Tài liệu là PDF dạng ảnh (scanned). Vui lòng upload PDF chứa text thuần.", e);
+            } 
             // Bọc lỗi kỹ thuật của Tika thành exception của domain để tầng trên xử lý.
             throw new DocumentParseException(
                 "Không thể parse file: " + fileName + " — " + e.getMessage(), e
