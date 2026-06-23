@@ -4,6 +4,7 @@ import com.ragchatbot.domain.port.ChunkingService;
 import com.ragchatbot.domain.port.DocumentParserService;
 import com.ragchatbot.domain.port.EmbeddingService;
 import com.ragchatbot.domain.port.VectorStoreService;
+import com.ragchatbot.infrastructure.chunking.ChunkingServiceFactory;
 import com.ragchatbot.infrastructure.persistence.ChunkRepository;
 import com.ragchatbot.infrastructure.persistence.DocumentRepository;
 import org.springframework.stereotype.Service;
@@ -13,7 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class UploadDocumentUseCase {
 
     private final DocumentParserService documentParserService;
-    private final ChunkingService chunkingService;
+    private final ChunkingServiceFactory chunkingServiceFactory;
     private final EmbeddingService embeddingService;
     private final VectorStoreService vectorStoreService;
 
@@ -22,14 +23,14 @@ public class UploadDocumentUseCase {
 
     public UploadDocumentUseCase(
             DocumentParserService documentParserService,
-            ChunkingService chunkingService,
+            ChunkingServiceFactory chunkingServiceFactory,
             EmbeddingService embeddingService,
             VectorStoreService vectorStoreService,
             DocumentRepository documentRepository,
             ChunkRepository chunkRepository
     ) {
         this.documentParserService = documentParserService;
-        this.chunkingService = chunkingService;
+        this.chunkingServiceFactory = chunkingServiceFactory;
         this.embeddingService = embeddingService;
         this.vectorStoreService = vectorStoreService;
         this.documentRepository = documentRepository;

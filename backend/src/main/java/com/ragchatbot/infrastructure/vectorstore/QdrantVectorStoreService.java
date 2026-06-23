@@ -1,46 +1,251 @@
 package com.ragchatbot.infrastructure.vectorstore;
 
+import static io.qdrant.client.ConditionFactory.matchKeyword;
+import static io.qdrant.client.PointIdFactory.id;
+import static io.qdrant.client.ValueFactory.nullValue;
+import static io.qdrant.client.ValueFactory.value;
+import static io.qdrant.client.VectorsFactory.vectors;
+import static io.qdrant.client.WithPayloadSelectorFactory.enable;
+
+import com.google.common.util.concurrent.ListenableFuture;
+import com.ragchatbot.config.QdrantProperties;
+import com.ragchatbot.domain.model.Document;
+import com.ragchatbot.domain.port.ChunkDraft;
+import com.ragchatbot.domain.port.RetrievedContext;
+import com.ragchatbot.domain.port.VectorStoreService;
+import com.ragchatbot.infrastructure.persistence.DocumentRepository;
+import io.qdrant.client.QdrantClient;
+import io.qdrant.client.grpc.Collections.Distance;
+import io.qdrant.client.grpc.Collections.VectorParams;
+import io.qdrant.client.grpc.JsonWithInt.Value;
+import io.qdrant.client.grpc.Points.Filter;
+import io.qdrant.client.grpc.Points.PointStruct;
+import io.qdrant.client.grpc.Points.ScoredPoint;
+import io.qdrant.client.grpc.Points.SearchPoints;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import org.springframework.stereotype.Service;
 
-public class QdrantVectorStoreService {
+@Service
+public class QdrantVectorStoreService implements VectorStoreService {
 
-    /**
-     * W3-15: Đẩy hoặc cập nhật các khối text kèm vector tương ứng vào hệ thống Qdrant
-     * Yêu cầu: Chỉ cần UUID + List, không tạo thêm entity mới để tối ưu bộ nhớ
-     */
-    public void upsert(String documentId, List<String> chunks, List<List<Float>> embeddings) {
+    private static final String PAYLOAD_CHUNK_ID = "chunk_id";
+    private static final String PAYLOAD_DOCUMENT_ID = "document_id";
+    private static final String PAYLOAD_CHUNK_INDEX = "chunk_index";
+    private static final String PAYLOAD_CONTENT = "content";
+    private static final String PAYLOAD_PAGE_NUMBER = "page_number";
+    private static final String PAYLOAD_TOKEN_COUNT = "token_count";
+    private static final String PAYLOAD_COURSE_CODE = "course_code";
+    private static final String PAYLOAD_CHAPTER_CODE = "chapter_code";
+
+    private final QdrantClient qdrantClient;
+    private final QdrantProperties properties;
+    private final DocumentRepository documentRepository;
+
+    public QdrantVectorStoreService(
+            QdrantClient qdrantClient,
+            QdrantProperties properties,
+            DocumentRepository documentRepository
+    ) {
+        this.qdrantClient = qdrantClient;
+        this.properties = properties;
+        this.documentRepository = documentRepository;
+    }
+
+    @PostConstruct
+    void initializeCollection() {
+        boolean exists = await(qdrantClient.collectionExistsAsync(
+                properties.getCollectionName(),
+                properties.getRequestTimeout()
+        ));
+
+        if (!exists) {
+            VectorParams vectorParams = VectorParams.newBuilder()
+                    .setSize(properties.getVectorSize())
+                    .setDistance(Distance.Cosine)
+                    .build();
+
+            await(qdrantClient.createCollectionAsync(
+                    properties.getCollectionName(),
+                    vectorParams,
+                    properties.getRequestTimeout()
+            ));
+        }
+    }
+
+    @Override
+    public void upsert(UUID documentId, List<ChunkDraft> chunks, List<List<Float>> embeddings) {
+        if (documentId == null) {
+            throw new IllegalArgumentException("Document ID must not be null");
+        }
         if (chunks == null || embeddings == null || chunks.size() != embeddings.size()) {
-            throw new IllegalArgumentException("LỖI: Số lượng văn bản (chunks) và danh sách Vector (embeddings) phải khớp nhau!");
+            throw new IllegalArgumentException("Chunks and embeddings must be non-null and have the same size");
         }
 
-        System.out.println("[Qdrant] Khởi động tiến trình nạp dữ liệu (Upsert)...");
-        System.out.println(" -> Document ID gốc: " + documentId);
-        System.out.println(" -> Tổng số lượng đoạn văn bản cần xử lý: " + chunks.size());
-        
-        // Thực thi logic Client truyền trực tiếp Point dữ liệu qua Qdrant API
-        System.out.println("[Qdrant] Hoàn tất upsert toàn bộ Vector nguyên thủy lên Collection!");
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new IllegalArgumentException("Document not found: " + documentId));
+
+        List<PointStruct> points = new ArrayList<>(chunks.size());
+        for (int i = 0; i < chunks.size(); i++) {
+            ChunkDraft chunk = chunks.get(i);
+            List<Float> embedding = embeddings.get(i);
+            validateEmbedding(embedding, i);
+
+            UUID pointId = pointId(documentId, chunk.chunkIndex());
+            points.add(PointStruct.newBuilder()
+                    .setId(id(pointId))
+                    .setVectors(vectors(embedding))
+                    .putAllPayload(payloadFor(pointId, document, chunk))
+                    .build());
+        }
+
+        if (!points.isEmpty()) {
+            await(qdrantClient.upsertAsync(
+                    properties.getCollectionName(),
+                    points,
+                    properties.getRequestTimeout()
+            ));
+        }
     }
 
-    /**
-     * W3-15: Tìm kiếm ngữ nghĩa bằng Vector của câu truy vấn kết hợp bộ lọc (Course & Chapter)
-     */
-    public List<String> search(List<Float> queryEmbedding, int topK, String courseCode, String chapterCode) {
-        System.out.println("[Qdrant] Nhận yêu cầu tìm kiếm ngữ nghĩa với Vector chiều dài: " + queryEmbedding.size());
-        System.out.println(" -> Thiết lập bộ lọc Payload: [Môn học: " + courseCode + " | Chương: " + chapterCode + "]");
-        System.out.println(" -> Giới hạn số lượng kết quả (TopK): " + topK);
+    @Override
+    public List<RetrievedContext> search(List<Float> queryEmbedding, int topK, String courseCode, String chapterCode) {
+        if (topK <= 0) {
+            return List.of();
+        }
+        validateEmbedding(queryEmbedding, -1);
 
-        // Giả lập dữ liệu trả về từ bộ lọc của Qdrant Database
-        List<String> mockSearchResults = new ArrayList<>();
-        mockSearchResults.add("Nội dung ngữ nghĩa liên quan đến môn học " + courseCode + " thuộc chương " + chapterCode);
-        
-        return mockSearchResults;
+        SearchPoints.Builder searchBuilder = SearchPoints.newBuilder()
+                .setCollectionName(properties.getCollectionName())
+                .addAllVector(queryEmbedding)
+                .setLimit(topK)
+                .setWithPayload(enable(true));
+
+        Filter filter = filterFor(courseCode, chapterCode);
+        if (filter != null) {
+            searchBuilder.setFilter(filter);
+        }
+
+        return await(qdrantClient.searchAsync(searchBuilder.build(), properties.getRequestTimeout()))
+                .stream()
+                .map(this::toRetrievedContext)
+                .toList();
     }
 
-    /**
-     * W3-15: Xóa bỏ mọi Vector dữ liệu liên quan đến một tài liệu cụ thể dựa trên ID
-     */
-    public void deleteByDocumentId(String documentId) {
-        System.out.println("[Qdrant] Đã gửi lệnh xóa sạch toàn bộ các Vector Point sở hữu Document ID: " + documentId);
+    @Override
+    public void deleteByDocumentId(UUID documentId) {
+        if (documentId == null) {
+            throw new IllegalArgumentException("Document ID must not be null");
+        }
+
+        Filter filter = Filter.newBuilder()
+                .addMust(matchKeyword(PAYLOAD_DOCUMENT_ID, documentId.toString()))
+                .build();
+
+        await(qdrantClient.deleteAsync(
+                properties.getCollectionName(),
+                filter,
+                properties.getRequestTimeout()
+        ));
+    }
+
+    @PreDestroy
+    void close() {
+        qdrantClient.close();
+    }
+
+    private Map<String, Value> payloadFor(UUID pointId, Document document, ChunkDraft chunk) {
+        Map<String, Value> payload = new LinkedHashMap<>();
+        payload.put(PAYLOAD_CHUNK_ID, value(pointId.toString()));
+        payload.put(PAYLOAD_DOCUMENT_ID, value(document.getId().toString()));
+        payload.put(PAYLOAD_CHUNK_INDEX, value((long) chunk.chunkIndex()));
+        payload.put(PAYLOAD_CONTENT, value(chunk.content()));
+        payload.put(PAYLOAD_PAGE_NUMBER, nullableLong(chunk.pageNumber()));
+        payload.put(PAYLOAD_TOKEN_COUNT, nullableLong(chunk.tokenCount()));
+        payload.put(PAYLOAD_COURSE_CODE, nullableString(document.getCourseCode()));
+        payload.put(PAYLOAD_CHAPTER_CODE, nullableString(document.getChapterCode()));
+        return payload;
+    }
+
+    private Filter filterFor(String courseCode, String chapterCode) {
+        Filter.Builder filterBuilder = Filter.newBuilder();
+        if (hasText(courseCode)) {
+            filterBuilder.addMust(matchKeyword(PAYLOAD_COURSE_CODE, courseCode));
+        }
+        if (hasText(chapterCode)) {
+            filterBuilder.addMust(matchKeyword(PAYLOAD_CHAPTER_CODE, chapterCode));
+        }
+        return filterBuilder.getMustCount() == 0 ? null : filterBuilder.build();
+    }
+
+    private RetrievedContext toRetrievedContext(ScoredPoint point) {
+        Map<String, Value> payload = point.getPayloadMap();
+        UUID chunkId = uuidValue(payload, PAYLOAD_CHUNK_ID);
+        UUID documentId = uuidValue(payload, PAYLOAD_DOCUMENT_ID);
+        if (chunkId == null && point.hasId() && point.getId().hasUuid()) {
+            chunkId = UUID.fromString(point.getId().getUuid());
+        }
+
+        return new RetrievedContext(
+                chunkId,
+                documentId,
+                stringValue(payload, PAYLOAD_CONTENT),
+                (double) point.getScore(),
+                stringValue(payload, PAYLOAD_COURSE_CODE),
+                stringValue(payload, PAYLOAD_CHAPTER_CODE)
+        );
+    }
+
+    private UUID pointId(UUID documentId, int chunkIndex) {
+        return UUID.nameUUIDFromBytes((documentId + ":" + chunkIndex).getBytes(StandardCharsets.UTF_8));
+    }
+
+    private void validateEmbedding(List<Float> embedding, int index) {
+        if (embedding == null || embedding.size() != properties.getVectorSize()) {
+            String subject = index < 0 ? "Query embedding" : "Embedding at index " + index;
+            throw new IllegalArgumentException(
+                    subject + " must have dimension " + properties.getVectorSize()
+            );
+        }
+    }
+
+    private Value nullableString(String string) {
+        return string == null ? nullValue() : value(string);
+    }
+
+    private Value nullableLong(Integer number) {
+        return number == null ? nullValue() : value(number.longValue());
+    }
+
+    private UUID uuidValue(Map<String, Value> payload, String key) {
+        String string = stringValue(payload, key);
+        return string == null ? null : UUID.fromString(string);
+    }
+
+    private String stringValue(Map<String, Value> payload, String key) {
+        Value value = payload.get(key);
+        return value != null && value.hasStringValue() ? value.getStringValue() : null;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private <T> T await(ListenableFuture<T> future) {
+        try {
+            return future.get();
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while calling Qdrant", ex);
+        } catch (ExecutionException ex) {
+            throw new IllegalStateException("Qdrant request failed", ex.getCause());
+        }
     }
 }
