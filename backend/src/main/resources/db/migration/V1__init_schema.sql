@@ -30,6 +30,7 @@ CREATE TABLE documents (
     chapter_title VARCHAR(150),
     -- status được đưa vào ngay từ V1, không cần ALTER ở V2
     status        VARCHAR(20)   NOT NULL DEFAULT 'PENDING',
+    indexed_at TIMESTAMP,
     created_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

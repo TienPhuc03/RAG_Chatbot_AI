@@ -31,10 +31,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class QdrantVectorStoreService implements VectorStoreService {
+
+    private static final Logger log = LoggerFactory.getLogger(QdrantVectorStoreService.class);
 
     private static final String PAYLOAD_CHUNK_ID = "chunk_id";
     private static final String PAYLOAD_DOCUMENT_ID = "document_id";
@@ -61,22 +65,26 @@ public class QdrantVectorStoreService implements VectorStoreService {
 
     @PostConstruct
     void initializeCollection() {
-        boolean exists = await(qdrantClient.collectionExistsAsync(
-                properties.getCollectionName(),
-                properties.getRequestTimeout()
-        ));
-
-        if (!exists) {
-            VectorParams vectorParams = VectorParams.newBuilder()
-                    .setSize(properties.getVectorSize())
-                    .setDistance(Distance.Cosine)
-                    .build();
-
-            await(qdrantClient.createCollectionAsync(
+        try {
+            boolean exists = await(qdrantClient.collectionExistsAsync(
                     properties.getCollectionName(),
-                    vectorParams,
                     properties.getRequestTimeout()
             ));
+
+            if (!exists) {
+                VectorParams vectorParams = VectorParams.newBuilder()
+                        .setSize(properties.getVectorSize())
+                        .setDistance(Distance.Cosine)
+                        .build();
+
+                await(qdrantClient.createCollectionAsync(
+                        properties.getCollectionName(),
+                        vectorParams,
+                        properties.getRequestTimeout()
+                ));
+            }
+        } catch (Exception ex) {
+            log.warn("Skipping Qdrant collection bootstrap for {} because the service is unavailable", properties.getCollectionName(), ex);
         }
     }
 
