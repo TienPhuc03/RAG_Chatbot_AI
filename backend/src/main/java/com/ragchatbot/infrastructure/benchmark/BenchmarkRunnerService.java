@@ -17,8 +17,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class BenchmarkRunnerService {
@@ -29,77 +29,118 @@ public class BenchmarkRunnerService {
     private final LlmInferenceService llmInferenceService;
     private final EmbeddingService embeddingService;
     private final BenchmarkResultRepository benchmarkResultRepository;
+    private final BenchmarkJobRegistry jobRegistry;
 
     public BenchmarkRunnerService(TestSetLoader testSetLoader,
                                   EvaluationService evaluationService,
                                   VectorStoreService vectorStoreService,
                                   LlmInferenceService llmInferenceService,
                                   EmbeddingService embeddingService,
-                                  BenchmarkResultRepository benchmarkResultRepository) {
+                                  BenchmarkResultRepository benchmarkResultRepository,
+                                  BenchmarkJobRegistry jobRegistry) {
         this.testSetLoader = testSetLoader;
         this.evaluationService = evaluationService;
         this.vectorStoreService = vectorStoreService;
         this.llmInferenceService = llmInferenceService;
         this.embeddingService = embeddingService;
         this.benchmarkResultRepository = benchmarkResultRepository;
+        this.jobRegistry = jobRegistry;
     }
 
+    /**
+     * Chạy benchmark bất đồng bộ.
+     *
+     * Flow:
+     *  1. Đánh dấu job RUNNING
+     *  2. Load test cases, lặp qua từng câu hỏi
+     *  3. Embed → Search → Generate → Evaluate → Save DB
+     *  4. Cập nhật tiến trình (doneCases) sau mỗi test case
+     *  5. Đánh dấu COMPLETED hoặc FAILED khi xong
+     *
+     * @param jobId  UUID được tạo và đăng ký bởi controller trước khi gọi method này
+     * @param config Tham số cấu hình của lần chạy
+     */
     @Async
-    public void runBenchmark(BenchmarkConfig config) {
-        List<TestCase> testCases = testSetLoader.loadTestCases();
+    public void runBenchmark(String jobId, BenchmarkConfig config) {
+        try {
+            jobRegistry.markRunning(jobId);
 
-        for (TestCase testCase : testCases) {
+            List<TestCase> testCases = testSetLoader.loadTestCases();
+            int done = 0;
 
-            // 1. Nhúng câu hỏi thành vector bằng hàm embed() chuẩn của interface
-            List<Float> questionEmbedding = embeddingService.embed(testCase.question());
+            for (TestCase testCase : testCases) {
 
-            // 2. Tìm kiếm ngữ cảnh
-            List<RetrievedContext> retrievedContexts = vectorStoreService.search(questionEmbedding, 5, null, null);
+                // 1. Nhúng câu hỏi thành vector
+                List<Float> questionEmbedding = embeddingService.embed(testCase.question());
 
-            // 3. Gọi LLM sinh câu trả lời
-            LlmAnswer llmAnswer = llmInferenceService.generateAnswer(testCase.question(), new ArrayList<>(), retrievedContexts);
+                // 2. Tìm kiếm ngữ cảnh liên quan
+                List<RetrievedContext> retrievedContexts =
+                        vectorStoreService.search(questionEmbedding, 5, null, null);
 
-            // 4. Trích xuất danh sách chuỗi ngữ cảnh để chấm điểm
-            List<String> contextsForEvaluation = retrievedContexts.stream()
-                    .map(RetrievedContext::content)
-                    .toList();
+                // 3. Sinh câu trả lời từ LLM
+                LlmAnswer llmAnswer = llmInferenceService.generateAnswer(
+                        testCase.question(), new ArrayList<>(), retrievedContexts);
 
-            // 5. Chấm điểm sử dụng llmAnswer.answer()
-            EvaluationResult evalResult = evaluationService.evaluate(
-                    testCase.question(),
-                    testCase.groundTruth(),
-                    llmAnswer.answer(),
-                    contextsForEvaluation
-            );
+                // 4. Trích xuất chuỗi ngữ cảnh để chấm điểm
+                List<String> contextsForEvaluation = retrievedContexts.stream()
+                        .map(RetrievedContext::content)
+                        .toList();
 
-            // Khởi tạo Entity và lưu Database
-            BenchmarkResult result = new BenchmarkResult();
-            result.setExperimentType(ExperimentType.valueOf(config.experimentType()));
-            result.setChunkingStrategy(ChunkingStrategy.valueOf(config.strategy()));
-            result.setEmbeddingModel(EmbeddingModel.valueOf(config.embeddingModel()));
+                // 5. Chấm điểm
+                EvaluationResult evalResult = evaluationService.evaluate(
+                        testCase.question(),
+                        testCase.groundTruth(),
+                        llmAnswer.answer(),
+                        contextsForEvaluation
+                );
 
-            result.setQuestion(testCase.question());
-            result.setGroundTruth(testCase.groundTruth());
-            result.setGeneratedAnswer(llmAnswer.answer());
+                // 6. Tạo entity và lưu DB
+                BenchmarkResult result = new BenchmarkResult();
+                result.setExperimentType(ExperimentType.valueOf(config.experimentType()));
+                result.setChunkingStrategy(ChunkingStrategy.valueOf(config.strategy()));
+                result.setEmbeddingModel(EmbeddingModel.valueOf(config.embeddingModel()));
 
-            result.setExactMatch(evalResult.exactMatch());
-            result.setF1Score(evalResult.f1());
-            result.setFaithfulness(evalResult.faithfulness());
-            result.setAnswerRelevancy(evalResult.answerRelevancy());
-            result.setContextPrecision(evalResult.contextPrecision());
-            result.setContextRecall(evalResult.contextRecall());
+                result.setQuestion(testCase.question());
+                result.setGroundTruth(testCase.groundTruth());
+                result.setGeneratedAnswer(llmAnswer.answer());
 
-            result.setLatencyMs(0L);
-            result.setCostUsd(BigDecimal.ZERO);
+                result.setExactMatch(evalResult.exactMatch());
+                result.setF1Score(evalResult.f1());
+                result.setFaithfulness(evalResult.faithfulness());
+                result.setAnswerRelevancy(evalResult.answerRelevancy());
+                result.setContextPrecision(evalResult.contextPrecision());
+                result.setContextRecall(evalResult.contextRecall());
 
-            benchmarkResultRepository.save(result);
-            System.out.println("Đã chạy xong và lưu test case: " + testCase.id() + " | F1: " + evalResult.f1());
+                result.setLatencyMs(0L);
+                result.setCostUsd(BigDecimal.ZERO);
+
+                benchmarkResultRepository.save(result);
+
+                // 7. Cập nhật tiến trình
+                done++;
+                jobRegistry.updateProgress(jobId, done);
+                System.out.println("[Benchmark job=" + jobId + "] Done " + done + "/" + testCases.size()
+                        + " | testCase=" + testCase.id() + " | F1=" + evalResult.f1());
+            }
+
+            jobRegistry.markCompleted(jobId);
+
+        } catch (Exception ex) {
+            jobRegistry.markFailed(jobId, ex.getMessage());
+            System.err.println("[Benchmark job=" + jobId + "] FAILED: " + ex.getMessage());
         }
     }
 
+    /**
+     * Cấu hình cho một lần chạy benchmark.
+     *
+     * @param strategy      Tên ChunkingStrategy enum (ví dụ: "FIXED_SIZE")
+     * @param embeddingModel Tên EmbeddingModel enum (ví dụ: "MULTILINGUAL_E5_BASE")
+     * @param experimentType Tên ExperimentType enum (ví dụ: "RAG")
+     */
     public record BenchmarkConfig(
             String strategy,
             String embeddingModel,
             String experimentType
     ) {}
-}
+}
