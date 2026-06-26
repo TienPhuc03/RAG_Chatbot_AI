@@ -6,9 +6,10 @@ import jakarta.validation.constraints.Size;
 /**
  * Request gửi câu hỏi tới chatbot.
  */
+
+// backend tự tạo session Id
 public record ChatRequest(
 
-        @NotBlank(message = "Session ID must not be blank")
         @Size(max = 100, message = "Session ID must be at most 100 characters")
         String sessionId,
 
