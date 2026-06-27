@@ -1,180 +1,193 @@
-from __future__ import annotations
+import asyncio
+import logging
+import os
+from contextlib import asynccontextmanager
+from typing import Optional
 
-from collections import Counter
-from math import sqrt
-from typing import Any
-
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
-try:
-    from datasets import Dataset
-    from ragas import evaluate as ragas_evaluate
-    from ragas.metrics import answer_relevancy, context_precision, context_recall, faithfulness
+# ── ragas imports ──────────────────────────────────────────────────────────────
+from ragas import SingleTurnSample
+from ragas.llms import llm_factory
+from ragas.metrics import (
+    AnswerRelevancy,
+    Faithfulness,
+    LLMContextPrecisionWithReference,
+    LLMContextRecall,
+)
 
-    RAGAS_AVAILABLE = True
-except Exception:
-    RAGAS_AVAILABLE = False
+logger = logging.getLogger("ragas-service")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
 
 
+# ── Global metric instances (shared, thread-safe reads) ────────────────────────
+_faithfulness_metric: Optional[Faithfulness] = None
+_answer_relevancy_metric: Optional[AnswerRelevancy] = None
+_context_precision_metric: Optional[LLMContextPrecisionWithReference] = None
+_context_recall_metric: Optional[LLMContextRecall] = None
+
+
+def _init_metrics() -> None:
+    """
+    Khởi tạo ragas metric objects với Gemini judge.
+    Được gọi một lần lúc startup.
+    """
+    global _faithfulness_metric, _answer_relevancy_metric
+    global _context_precision_metric, _context_recall_metric
+
+    api_key = os.environ.get("GOOGLE_API_KEY", "")
+    if not api_key:
+        logger.warning(
+            "GOOGLE_API_KEY không được set. "
+            "Các metric LLM-judge sẽ thất bại khi gọi thực sự."
+        )
+
+    model_name = os.environ.get("RAGAS_MODEL", "gemini-2.0-flash")
+    logger.info("Khởi tạo Gemini judge: model=%s", model_name)
+
+    # Tạo LLM judge qua ragas llm_factory với google-genai backend
+    try:
+        from google import genai  # noqa: PLC0415
+
+        client = genai.Client(api_key=api_key)
+        evaluator_llm = llm_factory(model_name, provider="google", client=client)
+        logger.info("Đã tạo evaluator_llm thành công qua google-genai")
+    except Exception as exc:  # fallback: OpenAI-compatible
+        logger.warning("Không thể dùng google-genai (%s), thử LangchainLLMWrapper...", exc)
+        from langchain_google_genai import ChatGoogleGenerativeAI  # noqa: PLC0415
+        from ragas.llms import LangchainLLMWrapper  # noqa: PLC0415
+
+        evaluator_llm = LangchainLLMWrapper(
+            ChatGoogleGenerativeAI(model=model_name, google_api_key=api_key)
+        )
+        logger.info("Đã tạo evaluator_llm qua LangchainLLMWrapper")
+
+    _faithfulness_metric = Faithfulness(llm=evaluator_llm)
+    _answer_relevancy_metric = AnswerRelevancy(llm=evaluator_llm)
+    _context_precision_metric = LLMContextPrecisionWithReference(llm=evaluator_llm)
+    _context_recall_metric = LLMContextRecall(llm=evaluator_llm)
+
+    logger.info("Tất cả 4 ragas metrics đã sẵn sàng.")
+
+
+# ── FastAPI lifespan ───────────────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Khởi tạo metrics ở startup, không làm gì ở shutdown."""
+    _init_metrics()
+    yield
+
+
+app = FastAPI(
+    title="RAGAS Service",
+    description="Tính 4 RAGAS metrics (faithfulness, answer_relevancy, context_precision, context_recall) dùng Gemini judge.",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+
+# ── Pydantic schemas ───────────────────────────────────────────────────────────
 class EvaluationRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    question: str
-    answer: str
-    ground_truth: str = Field(alias="groundTruth")
-    contexts: list[str] = Field(default_factory=list)
+    question: str = Field(..., min_length=1, description="Câu hỏi gốc của người dùng")
+    answer: str = Field(..., min_length=1, description="Câu trả lời do LLM sinh ra")
+    ground_truth: str = Field(
+        ...,
+        alias="groundTruth",
+        min_length=1,
+        description="Câu trả lời đúng (ground truth)",
+    )
+    contexts: list[str] = Field(
+        default_factory=list,
+        description="Danh sách các đoạn context được retrieve",
+    )
 
 
-app = FastAPI(title="RAGAS Service", version="0.2.0")
+class EvaluationResponse(BaseModel):
+    faithfulness: float = Field(description="[0,1] Answer có dựa trên context không")
+    answer_relevancy: float = Field(
+        serialization_alias="answerRelevancy",
+        description="[0,1] Answer có liên quan đến question không",
+    )
+    context_precision: float = Field(
+        serialization_alias="contextPrecision",
+        description="[0,1] Context retrieved có signal/noise tốt không",
+    )
+    context_recall: float = Field(
+        serialization_alias="contextRecall",
+        description="[0,1] Context có đủ thông tin để trả lời ground_truth không",
+    )
 
 
+# ── Endpoints ──────────────────────────────────────────────────────────────────
 @app.get("/health")
 def health() -> dict[str, str]:
+    """Health check — luôn trả ok nếu service đang chạy."""
     return {"status": "ok"}
 
 
-@app.post("/evaluate")
-def evaluate(payload: EvaluationRequest) -> dict[str, Any]:
-    try:
-        metrics = evaluate_with_ragas(payload)
-        source = "ragas"
-    except Exception:
-        metrics = local_fallback_metrics(payload)
-        source = "local-fallback"
+@app.post("/evaluate", response_model=EvaluationResponse)
+async def evaluate(req: EvaluationRequest) -> EvaluationResponse:
+    """
+    Tính 4 RAGAS metrics cho một cặp (question, answer, contexts, ground_truth).
 
-    return {
-        "faithfulness": metrics["faithfulness"],
-        "answerRelevancy": metrics["answer_relevancy"],
-        "contextPrecision": metrics["context_precision"],
-        "contextRecall": metrics["context_recall"],
-        "source": source,
-    }
+    Mỗi metric được tính song song bằng asyncio.gather để tối ưu latency.
+    Nếu một metric thất bại (ví dụ: API rate limit), trả về -1.0 cho metric đó
+    và log cảnh báo thay vì fail toàn bộ request.
+    """
+    if _faithfulness_metric is None:
+        raise HTTPException(status_code=503, detail="RAGAS metrics chưa được khởi tạo.")
 
-
-def evaluate_with_ragas(payload: EvaluationRequest) -> dict[str, float]:
-    if not RAGAS_AVAILABLE:
-        raise RuntimeError("ragas package is not available")
-
-    dataset = Dataset.from_dict(
-        {
-            "question": [payload.question],
-            "answer": [payload.answer],
-            "ground_truth": [payload.ground_truth],
-            "contexts": [payload.contexts],
-        }
+    # Tạo 2 sample object riêng:
+    #  - sample_with_ref: dùng cho ContextPrecision và ContextRecall (cần reference/ground_truth)
+    #  - sample_no_ref  : dùng cho Faithfulness và AnswerRelevancy (không cần reference)
+    sample_no_ref = SingleTurnSample(
+        user_input=req.question,
+        response=req.answer,
+        retrieved_contexts=req.contexts,
     )
 
-    result = ragas_evaluate(
-        dataset,
-        metrics=[faithfulness, answer_relevancy, context_precision, context_recall],
+    sample_with_ref = SingleTurnSample(
+        user_input=req.question,
+        response=req.answer,
+        retrieved_contexts=req.contexts,
+        reference=req.ground_truth,
     )
 
-    return extract_metrics(result)
-
-
-def extract_metrics(result: Any) -> dict[str, float]:
-    if hasattr(result, "to_pandas"):
-        frame = result.to_pandas()
-        row = frame.iloc[0].to_dict()
-        return {
-            "faithfulness": float(row.get("faithfulness", 0.0) or 0.0),
-            "answer_relevancy": float(row.get("answer_relevancy", 0.0) or 0.0),
-            "context_precision": float(row.get("context_precision", 0.0) or 0.0),
-            "context_recall": float(row.get("context_recall", 0.0) or 0.0),
-        }
-
-    if isinstance(result, dict):
-        return {
-            "faithfulness": float(result.get("faithfulness", 0.0) or 0.0),
-            "answer_relevancy": float(result.get("answer_relevancy", 0.0) or 0.0),
-            "context_precision": float(result.get("context_precision", 0.0) or 0.0),
-            "context_recall": float(result.get("context_recall", 0.0) or 0.0),
-        }
-
-    scores = getattr(result, "scores", None)
-    if scores is not None:
+    async def safe_score(metric, sample, metric_name: str) -> float:
+        """Tính score một metric, trả -1.0 nếu thất bại."""
         try:
-            first = scores[0]
-            return {
-                "faithfulness": float(getattr(first, "faithfulness", 0.0) or 0.0),
-                "answer_relevancy": float(getattr(first, "answer_relevancy", 0.0) or 0.0),
-                "context_precision": float(getattr(first, "context_precision", 0.0) or 0.0),
-                "context_recall": float(getattr(first, "context_recall", 0.0) or 0.0),
-            }
-        except Exception:
-            pass
+            score = await metric.single_turn_ascore(sample)
+            # ragas trả về numpy float hoặc None trong một số trường hợp
+            return float(score) if score is not None else 0.0
+        except Exception as exc:
+            logger.warning("Metric '%s' thất bại: %s", metric_name, exc)
+            return -1.0
 
-    raise RuntimeError("Unable to extract ragas metrics")
+    # Chạy song song 4 metrics
+    faithfulness_score, answer_relevancy_score, context_precision_score, context_recall_score = (
+        await asyncio.gather(
+            safe_score(_faithfulness_metric, sample_no_ref, "faithfulness"),
+            safe_score(_answer_relevancy_metric, sample_no_ref, "answer_relevancy"),
+            safe_score(_context_precision_metric, sample_with_ref, "context_precision"),
+            safe_score(_context_recall_metric, sample_with_ref, "context_recall"),
+        )
+    )
 
+    logger.info(
+        "Evaluated | faithfulness=%.3f | answer_relevancy=%.3f "
+        "| context_precision=%.3f | context_recall=%.3f",
+        faithfulness_score,
+        answer_relevancy_score,
+        context_precision_score,
+        context_recall_score,
+    )
 
-def local_fallback_metrics(payload: EvaluationRequest) -> dict[str, float]:
-    truth_tokens = tokenize(payload.ground_truth)
-    answer_tokens = tokenize(payload.answer)
-
-    exact_match = 1.0 if normalize(payload.ground_truth) == normalize(payload.answer) else 0.0
-    f1_score = f1(truth_tokens, answer_tokens)
-
-    context_precision = context_overlap_precision(payload.contexts, payload.ground_truth)
-    context_recall = context_overlap_recall(payload.contexts, payload.ground_truth)
-
-    faithfulness = min(1.0, max(0.0, 0.5 * exact_match + 0.5 * context_precision))
-    answer_relevancy = min(1.0, max(0.0, f1_score))
-
-    return {
-        "faithfulness": faithfulness,
-        "answer_relevancy": answer_relevancy,
-        "context_precision": context_precision,
-        "context_recall": context_recall,
-    }
-
-
-def tokenize(text: str) -> list[str]:
-    return [token for token in normalize(text).split() if token]
-
-
-def normalize(text: str) -> str:
-    return "".join(character.lower() if character.isalnum() or character.isspace() else " " for character in text).strip()
-
-
-def f1(truth_tokens: list[str], answer_tokens: list[str]) -> float:
-    if not truth_tokens or not answer_tokens:
-        return 0.0
-    truth_counts = Counter(truth_tokens)
-    answer_counts = Counter(answer_tokens)
-    common = sum((truth_counts & answer_counts).values())
-    if common == 0:
-        return 0.0
-    precision = common / len(answer_tokens)
-    recall = common / len(truth_tokens)
-    return (2 * precision * recall) / (precision + recall)
-
-
-def context_overlap_precision(contexts: list[str], ground_truth: str) -> float:
-    if not contexts:
-        return 0.0
-    truth_tokens = set(tokenize(ground_truth))
-    if not truth_tokens:
-        return 0.0
-    context_tokens = set()
-    for context in contexts:
-        context_tokens.update(tokenize(context))
-    if not context_tokens:
-        return 0.0
-    overlap = len(context_tokens & truth_tokens)
-    return overlap / len(context_tokens)
-
-
-def context_overlap_recall(contexts: list[str], ground_truth: str) -> float:
-    if not contexts:
-        return 0.0
-    truth_tokens = set(tokenize(ground_truth))
-    if not truth_tokens:
-        return 0.0
-    context_tokens = set()
-    for context in contexts:
-        context_tokens.update(tokenize(context))
-    if not context_tokens:
-        return 0.0
-    overlap = len(context_tokens & truth_tokens)
-    return overlap / len(truth_tokens)
+    return EvaluationResponse(
+        faithfulness=faithfulness_score,
+        answer_relevancy=answer_relevancy_score,
+        context_precision=context_precision_score,
+        context_recall=context_recall_score,
+    )
