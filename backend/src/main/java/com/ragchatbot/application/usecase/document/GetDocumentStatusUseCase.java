@@ -4,13 +4,9 @@ import com.ragchatbot.application.dto.document.DocumentStatusResponse;
 import com.ragchatbot.domain.enums.DocumentStatus;
 import com.ragchatbot.domain.model.Document;
 import com.ragchatbot.infrastructure.persistence.DocumentRepository;
-import org.springframework.stereotype.Service;
 import java.util.UUID;
+import org.springframework.stereotype.Service;
 
-/*
- *Use case lấy trạng thái xử lý của tài liệu.
- *Logic: indexedAt != null -> INDEXED, null -> PROCESSING.
- */
 @Service
 public class GetDocumentStatusUseCase {
 
@@ -21,14 +17,10 @@ public class GetDocumentStatusUseCase {
     }
 
     public DocumentStatusResponse execute(UUID id) {
-        //tìm document, ném lỗi nếu không tồn tại
         Document doc = documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Document not found: " + id));
 
-        //indexedAt được set sau khi embed xong -> dùng để suy ra trạng thái
-        DocumentStatus status = doc.getIndexedAt() != null
-                ? DocumentStatus.INDEXED
-                : DocumentStatus.PROCESSING;
+        DocumentStatus status = doc.getStatus() == null ? DocumentStatus.PENDING : doc.getStatus();
 
         return new DocumentStatusResponse(doc.getId(), status, doc.getIndexedAt());
     }

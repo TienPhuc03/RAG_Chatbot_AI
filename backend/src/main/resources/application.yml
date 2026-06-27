@@ -38,6 +38,14 @@ rag:
   vector-store:
     qdrant-host: ${QDRANT_HOST:localhost}
     qdrant-port: ${QDRANT_PORT:6333}
+    collection-name: ${QDRANT_COLLECTION_NAME:rag_chunks}
+    vector-size: ${QDRANT_VECTOR_SIZE:3072}
+    use-tls: ${QDRANT_USE_TLS:false}
+    request-timeout: ${QDRANT_REQUEST_TIMEOUT:30s}
+  evaluation:
+    base-url: ${RAGAS_SERVICE_URL:http://localhost:8002}
+    evaluate-path: ${RAGAS_EVALUATE_PATH:/evaluate}
+    request-timeout: ${RAGAS_REQUEST_TIMEOUT:30s}
 
 gemini:
   api-key: ${GEMINI_API_KEY:}

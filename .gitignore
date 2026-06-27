@@ -7,3 +7,5 @@ __pycache__/
 *env
 notes/test-files/
 *.env
+backend/hs_err_pid*.log 
+replay_pid*.log

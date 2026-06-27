@@ -1,157 +1,181 @@
 package com.ragchatbot.application.usecase.chat;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ragchatbot.application.dto.chat.ChatRequest;
 import com.ragchatbot.application.dto.chat.ChatResponse;
-import com.ragchatbot.domain.port.EmbeddingService;
-import com.ragchatbot.domain.port.LlmInferenceService;
-import com.ragchatbot.domain.port.VectorStoreService;
-import com.ragchatbot.infrastructure.persistence.ConversationRepository;
-import com.ragchatbot.infrastructure.persistence.MessageRepository;
-import org.springframework.stereotype.Service;
-
 import com.ragchatbot.domain.enums.MessageRole;
 import com.ragchatbot.domain.model.Conversation;
 import com.ragchatbot.domain.model.Message;
 import com.ragchatbot.domain.port.ConversationTurn;
+import com.ragchatbot.domain.port.EmbeddingService;
 import com.ragchatbot.domain.port.LlmAnswer;
+import com.ragchatbot.domain.port.LlmInferenceService;
 import com.ragchatbot.domain.port.RetrievedContext;
-
+import com.ragchatbot.domain.port.VectorStoreService;
+import com.ragchatbot.infrastructure.persistence.ConversationRepository;
+import com.ragchatbot.infrastructure.persistence.MessageRepository;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 public class SendMessageUseCase {
 
+    private static final Logger log = LoggerFactory.getLogger(SendMessageUseCase.class);
+
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
-
     private final EmbeddingService embeddingService;
     private final VectorStoreService vectorStoreService;
     private final LlmInferenceService llmInferenceService;
+    private final ObjectMapper objectMapper;
 
     public SendMessageUseCase(
             ConversationRepository conversationRepository,
             MessageRepository messageRepository,
             EmbeddingService embeddingService,
             VectorStoreService vectorStoreService,
-            LlmInferenceService llmInferenceService
+            LlmInferenceService llmInferenceService,
+            ObjectMapper objectMapper
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.embeddingService = embeddingService;
         this.vectorStoreService = vectorStoreService;
         this.llmInferenceService = llmInferenceService;
+        this.objectMapper = objectMapper;
     }
 
-    /**
-     * Xử lý câu hỏi và sinh câu trả lời từ hệ thống RAG.
-     */
     public ChatResponse execute(ChatRequest request) {
+        if (request == null || !StringUtils.hasText(request.question())) {
+            throw new IllegalArgumentException("Question must not be blank");
+        }
 
         Conversation conversation = resolveConversation(request);
 
-        List<Message> recentMessages =
-                messageRepository.findTop5ByConversationIdOrderBySequenceNoDesc(conversation.getId());
+        if (!StringUtils.hasText(conversation.getTitle())) {
+            conversation.setTitle(deriveTitle(request.question()));
+            conversationRepository.saveAndFlush(conversation);
+        }
+
+        long existingMessages = messageRepository.countByConversationId(conversation.getId());
+
+        List<Message> recentMessages = new ArrayList<>(
+                messageRepository.findTop5ByConversationIdOrderBySequenceNoDesc(conversation.getId())
+        );
+        Collections.reverse(recentMessages);
 
         List<ConversationTurn> conversationHistory = recentMessages.stream()
-                .sorted((a, b) -> a.getSequenceNo().compareTo(b.getSequenceNo()))
                 .map(message -> new ConversationTurn(
                         message.getRole(),
                         message.getContent()
                 ))
                 .toList();
 
-        long currentMessageCount =
-                messageRepository.countByConversationId(conversation.getId());
-
-        int userSequenceNo = (int) currentMessageCount + 1;
+        int userSequenceNo = Math.toIntExact(existingMessages + 1);
         int assistantSequenceNo = userSequenceNo + 1;
 
-        saveMessage(conversation, userSequenceNo, MessageRole.USER, request.question());
-
-        List<Float> queryEmbedding = embeddingService.embed(request.question());
-
-        List<RetrievedContext> retrievedContexts = vectorStoreService.search(
-                queryEmbedding,
-                5,
-                request.courseCode(),
-                request.chapterCode()
+        saveMessage(
+                conversation,
+                userSequenceNo,
+                MessageRole.USER,
+                request.question(),
+                null
         );
 
-        LlmAnswer llmAnswer = llmInferenceService.generateAnswer(
+        List<Float> questionEmbedding = embeddingService.embed(request.question());
+
+        List<RetrievedContext> retrievedContexts = vectorStoreService.search(
+                questionEmbedding,
+                5,
+                blankToNull(request.courseCode()),
+                blankToNull(request.chapterCode())
+        );
+
+        LlmAnswer answer = llmInferenceService.generateAnswer(
                 request.question(),
                 conversationHistory,
                 retrievedContexts
         );
 
+        String citationPayload = serializeCitations(answer.citations());
+
         saveMessage(
                 conversation,
                 assistantSequenceNo,
                 MessageRole.ASSISTANT,
-                llmAnswer.answer()
+                answer.answer(),
+                citationPayload
         );
 
         return new ChatResponse(
                 conversation.getId().toString(),
                 conversation.getSessionId(),
-                llmAnswer.answer(),
-                llmAnswer.groundedInDocuments()
+                answer.answer(),
+                answer.groundedInDocuments()
         );
     }
 
-
-    /**
-     * Tìm Conversation theo sessionId.
-     * Nếu chưa tồn tại thì tạo Conversation mới.
-     */
     private Conversation resolveConversation(ChatRequest request) {
-
         String sessionId = request.sessionId();
 
-        if (sessionId != null && !sessionId.isBlank()) {
-            return conversationRepository.findBySessionId(sessionId)
-                    .orElseGet(() -> createConversation(sessionId, request.question()));
+        if (StringUtils.hasText(sessionId)) {
+            return conversationRepository.findBySessionId(sessionId.trim())
+                    .orElseGet(() -> createConversation(sessionId.trim(), request.question()));
         }
 
         return createConversation(UUID.randomUUID().toString(), request.question());
     }
 
-    private Conversation createConversation(String sessionId, String question) {
-
+    private Conversation createConversation(String sessionId, String firstQuestion) {
         Conversation conversation = new Conversation();
+        conversation.setId(UUID.randomUUID());
         conversation.setSessionId(sessionId);
-        conversation.setTitle(buildTitle(question));
-
-        return conversationRepository.save(conversation);
+        conversation.setTitle(deriveTitle(firstQuestion));
+        return conversationRepository.saveAndFlush(conversation);
     }
 
-    private void saveMessage(
+    private Message saveMessage(
             Conversation conversation,
-            int sequenceNo,
+            long sequenceNo,
             MessageRole role,
-            String content
+            String content,
+            String citationPayload
     ) {
         Message message = new Message();
+        message.setId(UUID.randomUUID());
         message.setConversation(conversation);
-        message.setSequenceNo(sequenceNo);
+        message.setSequenceNo(Math.toIntExact(sequenceNo));
         message.setRole(role);
         message.setContent(content);
-
-        messageRepository.save(message);
+        message.setCitationPayload(citationPayload);
+        return messageRepository.saveAndFlush(message);
     }
 
-    private String buildTitle(String question) {
+    private String serializeCitations(List<String> citations) {
+        try {
+            return objectMapper.writeValueAsString(citations == null ? List.of() : citations);
+        } catch (JsonProcessingException ex) {
+            log.warn("Failed to serialize citation payload", ex);
+            return "[]";
+        }
+    }
 
-        if (question == null || question.isBlank()) {
-            return "New conversation";
+    private String deriveTitle(String question) {
+        if (!StringUtils.hasText(question)) {
+            return "Conversation";
         }
 
-        String normalized = question.trim();
+        String trimmed = question.trim();
+        return trimmed.length() <= 80 ? trimmed : trimmed.substring(0, 77) + "...";
+    }
 
-        if (normalized.length() <= 80) {
-            return normalized;
-        }
-
-        return normalized.substring(0, 80);
+    private String blankToNull(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 }
