@@ -1,25 +1,3 @@
-"""
-ragas-service — W4-14
-=====================
-FastAPI service tính 4 RAGAS metrics thực sự bằng thư viện ragas 0.2+.
-
-LLM judge: Google Gemini (gemini-2.0-flash) — cùng model với phần backend Java.
-Metrics:
-  - Faithfulness           : answer có dựa trên context không? (hallucination check)
-  - AnswerRelevancy        : answer có trả lời đúng question không?
-  - ContextPrecision       : context retrieved có signal/noise tốt không?
-  - ContextRecall          : context có đủ thông tin để trả lời ground_truth không?
-
-Cách dùng:
-  POST /evaluate
-  Body: { question, answer, groundTruth, contexts: [str] }
-  Response: { faithfulness, answerRelevancy, contextPrecision, contextRecall }
-
-Env vars:
-  GOOGLE_API_KEY  — bắt buộc, dùng cho Gemini judge
-  RAGAS_MODEL     — tùy chọn, mặc định "gemini-2.0-flash"
-"""
-
 import asyncio
 import logging
 import os
