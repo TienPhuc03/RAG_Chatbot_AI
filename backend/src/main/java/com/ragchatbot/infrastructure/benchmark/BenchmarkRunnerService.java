@@ -1,24 +1,25 @@
 package com.ragchatbot.infrastructure.benchmark;
 
-import com.ragchatbot.domain.model.TestCase;
-import com.ragchatbot.domain.model.EvaluationResult;
-import com.ragchatbot.domain.model.BenchmarkResult;
-import com.ragchatbot.domain.enums.ChunkingStrategy;
-import com.ragchatbot.domain.enums.EmbeddingModel;
-import com.ragchatbot.domain.enums.ExperimentType;
-import com.ragchatbot.domain.port.EvaluationService;
-import com.ragchatbot.domain.port.VectorStoreService;
-import com.ragchatbot.domain.port.EmbeddingService;
-import com.ragchatbot.domain.port.LlmInferenceService;
-import com.ragchatbot.domain.port.RetrievedContext;
-import com.ragchatbot.domain.port.LlmAnswer;
-import com.ragchatbot.infrastructure.persistence.BenchmarkResultRepository;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.ArrayList;
+import com.ragchatbot.domain.enums.ChunkingStrategy;
+import com.ragchatbot.domain.enums.EmbeddingModel;
+import com.ragchatbot.domain.enums.ExperimentType;
+import com.ragchatbot.domain.model.BenchmarkResult;
+import com.ragchatbot.domain.model.EvaluationResult;
+import com.ragchatbot.domain.model.TestCase;
+import com.ragchatbot.domain.port.EmbeddingService;
+import com.ragchatbot.domain.port.EvaluationService;
+import com.ragchatbot.domain.port.LlmAnswer;
+import com.ragchatbot.domain.port.LlmInferenceService;
+import com.ragchatbot.domain.port.RetrievedContext;
+import com.ragchatbot.domain.port.VectorStoreService;
+import com.ragchatbot.infrastructure.persistence.BenchmarkResultRepository;
 
 @Service
 public class BenchmarkRunnerService {
@@ -55,6 +56,7 @@ public class BenchmarkRunnerService {
 
             // 2. Tìm kiếm ngữ cảnh
             List<RetrievedContext> retrievedContexts = vectorStoreService.search(questionEmbedding, 5, null, null);
+            boolean retrievalHit = computeRetrievalHit(testCase.groundTruth(), retrievedContexts);
 
             // 3. Gọi LLM sinh câu trả lời
             LlmAnswer llmAnswer = llmInferenceService.generateAnswer(testCase.question(), new ArrayList<>(), retrievedContexts);
@@ -88,13 +90,30 @@ public class BenchmarkRunnerService {
             result.setAnswerRelevancy(evalResult.answerRelevancy());
             result.setContextPrecision(evalResult.contextPrecision());
             result.setContextRecall(evalResult.contextRecall());
+            result.setRetrievalHit(retrievalHit);
 
             result.setLatencyMs(0L);
             result.setCostUsd(BigDecimal.ZERO);
 
             benchmarkResultRepository.save(result);
             System.out.println("Đã chạy xong và lưu test case: " + testCase.id() + " | F1: " + evalResult.f1());
+
         }
+    }
+
+    private boolean computeRetrievalHit(String groundTruth, List<RetrievedContext> retrievedContexts) {
+    if (groundTruth == null || groundTruth.isBlank() || retrievedContexts == null || retrievedContexts.isEmpty()) {
+        return false;
+    }
+    String normalizedGroundTruth = groundTruth.toLowerCase().trim();
+    return retrievedContexts.stream()
+            .map(RetrievedContext::content)
+            .filter(content -> content != null && !content.isBlank())
+            .anyMatch(content -> {
+                String normalizedContent = content.toLowerCase().trim();
+                return normalizedContent.contains(normalizedGroundTruth)
+                        || normalizedGroundTruth.contains(normalizedContent);
+            });
     }
 
     public record BenchmarkConfig(
@@ -102,4 +121,5 @@ public class BenchmarkRunnerService {
             String embeddingModel,
             String experimentType
     ) {}
+    
 }

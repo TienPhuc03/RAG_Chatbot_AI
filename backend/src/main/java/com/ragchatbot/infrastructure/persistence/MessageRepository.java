@@ -10,4 +10,7 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
     List<Message> findByConversationIdOrderBySequenceNoAsc(UUID conversationId);
 
     List<Message> findTop5ByConversationIdOrderBySequenceNoDesc(UUID conversationId);
+
+    long countByConversationId(UUID conversationId);
 }
+

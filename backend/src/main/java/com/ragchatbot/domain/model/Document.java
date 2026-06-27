@@ -1,10 +1,6 @@
 package com.ragchatbot.domain.model;
 
-import java.time.Instant;
-import java.util.UUID;
-
 import com.ragchatbot.domain.enums.DocumentStatus;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,7 +9,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-// import org.hibernate.annotations.UuidGenerator;
+import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "documents")
@@ -50,6 +47,10 @@ public class Document {
     @Column(name = "indexed_at")
     private Instant indexedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private DocumentStatus status = DocumentStatus.PENDING;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -61,9 +62,6 @@ public class Document {
         Instant now = Instant.now();
         createdAt = now;
         updatedAt = now;
-        if (indexedAt == null) {
-            indexedAt = now;
-        }
     }
 
     @PreUpdate
@@ -151,6 +149,14 @@ public class Document {
         this.indexedAt = indexedAt;
     }
 
+    public DocumentStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(DocumentStatus status) {
+        this.status = status;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -166,14 +172,4 @@ public class Document {
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    //khởi tạo mặc định là PENDING khi mới upload lên
-    private DocumentStatus status = DocumentStatus.PENDING;
-
-    //gette: lấy ra trạng thái hiện tại của tài liệu
-    public DocumentStatus getStatus() { return status; }
-    //setter: cập nhật trạng thái mới cho tài liệu
-    public void setStatus(DocumentStatus status) { this.status = status; }
 }

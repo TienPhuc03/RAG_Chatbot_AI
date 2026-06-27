@@ -7,15 +7,18 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
+
+import org.hibernate.annotations.UuidGenerator;
 import java.util.UUID;
-// import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "conversations")
 public class Conversation {
 
+    // tự sinh UUID
     @Id
-    @Column(name = "conversations_id")
+    @UuidGenerator
+    @Column(name = "conversations_id", updatable = false, nullable = false)
     private UUID id;
 
     @Column(name = "session_id", nullable = false, unique = true, length = 100)

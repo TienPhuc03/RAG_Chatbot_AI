@@ -25,7 +25,7 @@ public class Chunk {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "document_id", nullable = false)
+    @JoinColumn(name = "documents_id", nullable = false)
     private Document document;
 
     @Column(name = "chunk_index", nullable = false)

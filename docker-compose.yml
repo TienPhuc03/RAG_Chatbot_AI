@@ -63,7 +63,9 @@ services:
     ports:
       - "8002:8002"
     environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Gemini API key — cùng key với backend, dùng làm LLM judge cho RAGAS
+      GOOGLE_API_KEY: ${GEMINI_API_KEY}
+      RAGAS_MODEL: ${RAGAS_MODEL:-gemini-2.0-flash}
     healthcheck:
       test:
         [
@@ -73,6 +75,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
 
   backend:
     build:
@@ -93,6 +96,7 @@ services:
       GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-001}
       GEMINI_TIMEOUT: ${GEMINI_TIMEOUT:-30s}
       GEMINI_MAX_RETRIES: ${GEMINI_MAX_RETRIES:-3}
+      RAGAS_SERVICE_URL: http://ragas-service:8002
     depends_on:
       postgres:
         condition: service_healthy
