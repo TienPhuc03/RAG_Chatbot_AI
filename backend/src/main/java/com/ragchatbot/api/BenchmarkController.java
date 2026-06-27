@@ -84,16 +84,31 @@ public class BenchmarkController {
 
         // Đăng ký job vào registry (PENDING) trước khi gọi @Async để tránh race condition
         jobRegistry.register(jobId, configDescription, 0);
-
-        // Gọi @Async — trả về ngay, benchmark chạy trên thread khác
-        benchmarkRunnerService.runBenchmark(
-                jobId,
-                new BenchmarkConfig(request.strategy(), request.embeddingModel(), request.experimentType())
+        BenchmarkConfig config = new BenchmarkConfig(
+            request.strategy(),
+            request.embeddingModel(),
+            request.experimentType()
         );
 
+        benchmarkRunnerService.runBenchmark(config);
+
         return ResponseEntity
-                .status(HttpStatus.ACCEPTED)
-                .body(new RunBenchmarkResponse(jobId, BenchmarkJobStatus.PENDING, configDescription, Instant.now()));
+            .status(HttpStatus.ACCEPTED)
+            .body(new RunBenchmarkResponse(
+                    jobId,
+                    BenchmarkJobStatus.PENDING,
+                    configDescription,
+                    Instant.now()
+            ));
+        // Gọi @Async — trả về ngay, benchmark chạy trên thread khác
+        // benchmarkRunnerService.runBenchmark(
+        //         jobId,
+        //         new BenchmarkConfig(request.strategy(), request.embeddingModel(), request.experimentType())
+        // );
+
+        // return ResponseEntity
+        //         .status(HttpStatus.ACCEPTED)
+        //         .body(new RunBenchmarkResponse(jobId, BenchmarkJobStatus.PENDING, configDescription, Instant.now()));
     }
 
     // ═══════════════════════════════════════════════════════════════════════
