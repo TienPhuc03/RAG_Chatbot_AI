@@ -1,0 +1,67 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", sans-serif;
+
+  --color-background: #f9f9ff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f9fafb;
+  --color-surface-soft: #f0f3ff;
+  --color-border-subtle: #e5e7eb;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #6b7280;
+  --color-teal: #0f766e;
+  --color-teal-strong: #0d9488;
+  --color-teal-soft: #ccfbf1;
+  --color-hero-mint: #d8fbf1;
+  --color-danger-soft: #fff1f2;
+
+  --shadow-soft: 0 16px 40px rgba(15, 23, 42, 0.06);
+  --shadow-float: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+html {
+  background: #f9f9ff;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(134, 242, 228, 0.28), transparent 20rem),
+    radial-gradient(circle at bottom right, rgba(220, 226, 243, 0.9), transparent 24rem),
+    #f9f9ff;
+  color: #111827;
+  font-family: "Inter", sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(13, 148, 136, 0.18);
+}
+
+.soft-grid {
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.scrollbar-subtle::-webkit-scrollbar {
+  width: 10px;
+}
+
+.scrollbar-subtle::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-subtle::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border: 3px solid transparent;
+  border-radius: 9999px;
+  background-clip: padding-box;
+}

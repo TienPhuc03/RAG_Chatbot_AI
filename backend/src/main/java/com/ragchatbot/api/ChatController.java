@@ -2,9 +2,11 @@ package com.ragchatbot.api;
 
 import com.ragchatbot.application.dto.chat.ChatRequest;
 import com.ragchatbot.application.dto.chat.ChatResponse;
+import com.ragchatbot.application.dto.chat.ChatHistoryMessageDto;
+import com.ragchatbot.application.dto.chat.ConversationSummaryDto;
 import com.ragchatbot.application.usecase.chat.GetChatHistoryUseCase;
+import com.ragchatbot.application.usecase.chat.GetConversationsUseCase;
 import com.ragchatbot.application.usecase.chat.SendMessageUseCase;
-import com.ragchatbot.domain.model.Message;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,13 +26,16 @@ public class ChatController {
 
     private final SendMessageUseCase sendMessageUseCase;
     private final GetChatHistoryUseCase getChatHistoryUseCase;
+    private final GetConversationsUseCase getConversationsUseCase;
 
     public ChatController(
             SendMessageUseCase sendMessageUseCase,
-            GetChatHistoryUseCase getChatHistoryUseCase
+            GetChatHistoryUseCase getChatHistoryUseCase,
+            GetConversationsUseCase getConversationsUseCase
     ) {
         this.sendMessageUseCase = sendMessageUseCase;
         this.getChatHistoryUseCase = getChatHistoryUseCase;
+        this.getConversationsUseCase = getConversationsUseCase;
     }
 
     /**
@@ -84,7 +89,7 @@ public class ChatController {
             )
     })
     @GetMapping("/history/{sessionId}")
-    public List<Message> getChatHistory(
+    public List<ChatHistoryMessageDto> getChatHistory(
 
             @Parameter(
                     description = "Session ID của cuộc hội thoại",
@@ -95,5 +100,20 @@ public class ChatController {
 
     ) {
         return getChatHistoryUseCase.execute(sessionId);
+    }
+
+    @Operation(
+            summary = "Get conversations",
+            description = "Láº¥y danh sÃ¡ch cuá»™c há»™i thoáº¡i theo thá»© tá»± cáº­p nháº­t gáº§n nháº¥t."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get conversations successfully"
+            )
+    })
+    @GetMapping("/conversations")
+    public List<ConversationSummaryDto> getConversations() {
+        return getConversationsUseCase.execute();
     }
 }
