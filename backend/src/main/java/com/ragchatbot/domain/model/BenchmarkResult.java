@@ -1,13 +1,22 @@
 package com.ragchatbot.domain.model;
 
-import com.ragchatbot.domain.enums.EmbeddingModel;
-import com.ragchatbot.domain.enums.ChunkingStrategy;
-import com.ragchatbot.domain.enums.ExperimentType;
-import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+
+import com.ragchatbot.domain.enums.ChunkingStrategy;
+import com.ragchatbot.domain.enums.EmbeddingModel;
+import com.ragchatbot.domain.enums.ExperimentType;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 // import org.hibernate.annotations.UuidGenerator;
 
 @Entity
@@ -57,6 +66,9 @@ public class BenchmarkResult {
 
     @Column(name = "context_recall")
     private Double contextRecall;
+
+    @Column(name = "retrieval_hit")
+    private Boolean retrievalHit;
 
     @Column(name = "latency_ms")
     private Long latencyMs;
@@ -174,6 +186,14 @@ public class BenchmarkResult {
 
     public void setContextRecall(Double contextRecall) {
         this.contextRecall = contextRecall;
+    }
+
+    public Boolean getRetrievalHit() {
+        return retrievalHit;
+    }
+
+    public void setRetrievalHit(Boolean retrievalHit) {
+        this.retrievalHit = retrievalHit;
     }
 
     public Long getLatencyMs() {

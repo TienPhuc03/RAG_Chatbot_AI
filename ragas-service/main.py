@@ -12,8 +12,8 @@ Metrics:
 
 Cách dùng:
   POST /evaluate
-  Body: { question, answer, ground_truth, contexts: [str] }
-  Response: { faithfulness, answer_relevancy, context_precision, context_recall }
+  Body: { question, answer, groundTruth, contexts: [str] }
+  Response: { faithfulness, answerRelevancy, contextPrecision, contextRecall }
 
 Env vars:
   GOOGLE_API_KEY  — bắt buộc, dùng cho Gemini judge
@@ -27,17 +27,17 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # ── ragas imports ──────────────────────────────────────────────────────────────
 from ragas import SingleTurnSample
+from ragas.llms import llm_factory
 from ragas.metrics import (
-    Faithfulness,
     AnswerRelevancy,
+    Faithfulness,
     LLMContextPrecisionWithReference,
     LLMContextRecall,
 )
-from ragas.llms import llm_factory
 
 logger = logging.getLogger("ragas-service")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
@@ -111,17 +111,36 @@ app = FastAPI(
 
 # ── Pydantic schemas ───────────────────────────────────────────────────────────
 class EvaluationRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     question: str = Field(..., min_length=1, description="Câu hỏi gốc của người dùng")
     answer: str = Field(..., min_length=1, description="Câu trả lời do LLM sinh ra")
-    ground_truth: str = Field(..., min_length=1, description="Câu trả lời đúng (ground truth)")
-    contexts: list[str] = Field(default=[], description="Danh sách các đoạn context được retrieve")
+    ground_truth: str = Field(
+        ...,
+        alias="groundTruth",
+        min_length=1,
+        description="Câu trả lời đúng (ground truth)",
+    )
+    contexts: list[str] = Field(
+        default_factory=list,
+        description="Danh sách các đoạn context được retrieve",
+    )
 
 
 class EvaluationResponse(BaseModel):
     faithfulness: float = Field(description="[0,1] Answer có dựa trên context không")
-    answer_relevancy: float = Field(description="[0,1] Answer có liên quan đến question không")
-    context_precision: float = Field(description="[0,1] Context retrieved có signal/noise tốt không")
-    context_recall: float = Field(description="[0,1] Context có đủ thông tin để trả lời ground_truth không")
+    answer_relevancy: float = Field(
+        serialization_alias="answerRelevancy",
+        description="[0,1] Answer có liên quan đến question không",
+    )
+    context_precision: float = Field(
+        serialization_alias="contextPrecision",
+        description="[0,1] Context retrieved có signal/noise tốt không",
+    )
+    context_recall: float = Field(
+        serialization_alias="contextRecall",
+        description="[0,1] Context có đủ thông tin để trả lời ground_truth không",
+    )
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────────

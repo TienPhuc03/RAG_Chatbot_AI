@@ -14,3 +14,4 @@ langchain-google-genai>=2.0.0
 
 # ── Datasets (ragas dùng huggingface datasets internally) ─────────────────────
 datasets>=2.20.0
+litellm
