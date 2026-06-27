@@ -1,5 +1,4 @@
 package com.ragchatbot.application.usecase.chat;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ragchatbot.application.dto.chat.ChatRequest;
@@ -53,33 +52,44 @@ public class SendMessageUseCase {
     }
 
     public ChatResponse execute(ChatRequest request) {
-        Conversation conversation = conversationRepository.findBySessionId(request.sessionId())
-                .orElseGet(() -> createConversation(request.sessionId(), request.question()));
+        if (request == null || !StringUtils.hasText(request.question())) {
+            throw new IllegalArgumentException("Question must not be blank");
+        }
 
-        long existingMessages = messageRepository.countByConversationId(conversation.getId());
-        Message userMessage = saveMessage(
-                conversation,
-                existingMessages + 1,
-                MessageRole.USER,
-                request.question(),
-                null
-        );
+        Conversation conversation = resolveConversation(request);
 
         if (!StringUtils.hasText(conversation.getTitle())) {
             conversation.setTitle(deriveTitle(request.question()));
             conversationRepository.saveAndFlush(conversation);
         }
 
+        long existingMessages = messageRepository.countByConversationId(conversation.getId());
+
         List<Message> recentMessages = new ArrayList<>(
                 messageRepository.findTop5ByConversationIdOrderBySequenceNoDesc(conversation.getId())
         );
         Collections.reverse(recentMessages);
 
-        List<ConversationTurn> history = recentMessages.stream()
-                .map(message -> new ConversationTurn(message.getRole(), message.getContent()))
+        List<ConversationTurn> conversationHistory = recentMessages.stream()
+                .map(message -> new ConversationTurn(
+                        message.getRole(),
+                        message.getContent()
+                ))
                 .toList();
 
+        int userSequenceNo = Math.toIntExact(existingMessages + 1);
+        int assistantSequenceNo = userSequenceNo + 1;
+
+        saveMessage(
+                conversation,
+                userSequenceNo,
+                MessageRole.USER,
+                request.question(),
+                null
+        );
+
         List<Float> questionEmbedding = embeddingService.embed(request.question());
+
         List<RetrievedContext> retrievedContexts = vectorStoreService.search(
                 questionEmbedding,
                 5,
@@ -89,20 +99,37 @@ public class SendMessageUseCase {
 
         LlmAnswer answer = llmInferenceService.generateAnswer(
                 request.question(),
-                history,
+                conversationHistory,
                 retrievedContexts
         );
 
         String citationPayload = serializeCitations(answer.citations());
+
         saveMessage(
                 conversation,
-                existingMessages + 2,
+                assistantSequenceNo,
                 MessageRole.ASSISTANT,
                 answer.answer(),
                 citationPayload
         );
 
-        return new ChatResponse(answer.answer(), answer.groundedInDocuments());
+        return new ChatResponse(
+                conversation.getId().toString(),
+                conversation.getSessionId(),
+                answer.answer(),
+                answer.groundedInDocuments()
+        );
+    }
+
+    private Conversation resolveConversation(ChatRequest request) {
+        String sessionId = request.sessionId();
+
+        if (StringUtils.hasText(sessionId)) {
+            return conversationRepository.findBySessionId(sessionId.trim())
+                    .orElseGet(() -> createConversation(sessionId.trim(), request.question()));
+        }
+
+        return createConversation(UUID.randomUUID().toString(), request.question());
     }
 
     private Conversation createConversation(String sessionId, String firstQuestion) {
@@ -143,6 +170,7 @@ public class SendMessageUseCase {
         if (!StringUtils.hasText(question)) {
             return "Conversation";
         }
+
         String trimmed = question.trim();
         return trimmed.length() <= 80 ? trimmed : trimmed.substring(0, 77) + "...";
     }

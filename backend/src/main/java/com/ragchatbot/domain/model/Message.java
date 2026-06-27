@@ -13,14 +13,16 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
-// import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "messages")
 public class Message {
 
+    //tự sinh UUID
     @Id
-    @Column(name = "messages_id")
+    @UuidGenerator
+    @Column(name = "messages_id", updatable = false, nullable = false)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
