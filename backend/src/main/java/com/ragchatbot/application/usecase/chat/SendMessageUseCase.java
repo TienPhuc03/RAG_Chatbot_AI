@@ -14,6 +14,7 @@ import com.ragchatbot.domain.port.RetrievedContext;
 import com.ragchatbot.domain.port.VectorStoreService;
 import com.ragchatbot.infrastructure.persistence.ConversationRepository;
 import com.ragchatbot.infrastructure.persistence.MessageRepository;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -112,6 +113,9 @@ public class SendMessageUseCase {
                 answer.answer(),
                 citationPayload
         );
+
+        conversation.setUpdatedAt(Instant.now());
+        conversationRepository.saveAndFlush(conversation);
 
         return new ChatResponse(
                 conversation.getId().toString(),

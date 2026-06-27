@@ -113,5 +113,6 @@ class SendMessageUseCaseTest {
         assertThat(savedMessages.get(0).getRole()).isEqualTo(MessageRole.USER);
         assertThat(savedMessages.get(1).getRole()).isEqualTo(MessageRole.ASSISTANT);
         assertThat(savedMessages.get(1).getCitationPayload()).isEqualTo("[\"doc-1:chunk-1\"]");
+        verify(conversationRepository, org.mockito.Mockito.atLeast(2)).saveAndFlush(any());
     }
 }
