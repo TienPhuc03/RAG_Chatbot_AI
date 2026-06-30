@@ -397,8 +397,76 @@
         color: #9f1239;
         border: 1px solid #fecdd3;
       }
+
+  
+    .skeleton {
+        background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.5s infinite;
+        height: 20px;
+    }
+    .skeleton-small {
+        width: 60%;
+    }
+    .skeleton-med {
+        width: 75%;
+    }
+    .skeleton-large {
+        width: 85%;
+    }
+    @keyframes skeleton-loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    .skeleton-row td { padding: 12px; }
+    
+    .table-responsive {
+      overflow-x: auto;
+      width: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .table-responsive table {
+      margin-bottom: 0;
+    }
+    
+    @media (max-width: 768px) {
+      .table-responsive {
+        border: 0;
+      }
+      table thead {
+        display: none;
+      }
+      table, tbody, tr, td {
+        display: block;
+        width: 100%;
+      }
+      tr {
+        margin-bottom: 15px;
+        border: 1px solid #dde1e7;
+        border-radius: 8px;
+      }
+      td {
+        display: block;
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+        border: 0;
+      }
+      td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 6px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 12px;
+      }
+    }
+</style>
     </style>
   </head>
+
+
   <body>
     <div class="container">
       <h1>📚 Quản lý tài liệu môn học</h1>
@@ -473,24 +541,53 @@
           </select>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Tên tài liệu</th>
-              <th>Môn học</th>
-              <th>Trạng thái</th>
-              <th>Ngày tải</th>
-              <th>Hành động</th>
-            </tr>
-          </thead>
-          <tbody id="docTableBody">
-            <tr class="empty-row">
-              <td colspan="5">
-                Chưa có tài liệu nào. Hãy tải lên file đầu tiên!
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Tên tài liệu</th>
+                <th>Môn học</th>
+                <th>Trạng thái</th>
+                <th>Ngày tải</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="loadingSkeleton">
+              <tr class="skeleton-row">
+                <td><div class="skeleton" style="width:80%;"></div></td>
+                <td><div class="skeleton skeleton-small"></div></td>
+                <td><div class="skeleton" style="width:50%;"></div></td>
+                <td><div class="skeleton" style="width:40%;"></div></td>
+                <td><div class="skeleton" style="width:50%;"></div></td>
+              </tr>
+              <tr class="skeleton-row">
+                <td><div class="skeleton skeleton-med"></div></td>
+                <td><div class="skeleton" style="width:55%;"></div></td>
+                <td><div class="skeleton" style="width:50%;"></div></td>
+                <td><div class="skeleton" style="width:40%;"></div></td>
+                <td><div class="skeleton" style="width:50%;"></div></td>
+              </tr>
+              <tr class="skeleton-row">
+                <td><div class="skeleton skeleton-large"></div></td>
+                <td><div class="skeleton" style="width:65%;"></div></td>
+                <td><div class="skeleton" style="width:50%;"></div></td>
+                <td><div class="skeleton" style="width:40%;"></div></td>
+                <td><div class="skeleton" style="width:50%;"></div></td>
+              </tr>
+            </tbody>
+            <tbody id="docTableBody">
+              <tr class="empty-row">
+                <td colspan="5">
+                  <div style="padding: 40px 20px; text-align: center" >
+                    <div style="font-size: 48px; margin-bottom: 16px;">📂</div>
+                    <p style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #1a1a2e;">Chưa có tài liệu nào</p>
+                    <p style="font-size: 14px; color: #666; margin: 0;">Hãy tải lên file đầu tiên để bắt đầu sử dụng</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -845,8 +942,15 @@
       // ── Load danh sách tài liệu khi mở trang ──────────────────────────
       async function loadDocuments() {
         try {
+          // Hiển thị loading skeleton
+          document.getElementById("loadingSkeleton").style.display = "table-row-group";
+
           const res = await fetch("/api/documents");
           const docs = await res.json();
+
+          // Ẩn loading skeleton
+          document.getElementById("loadingSkeleton").style.display = "none";
+
           if (docs.length === 0) return;
 
           docs.forEach((doc) => addDocumentRow(doc));
@@ -858,8 +962,36 @@
             .forEach((d) => startPolling(d.id));
         } catch (err) {
           console.error("Failed to load documents:", err);
+          // Ẩn loading skeleton khi có lỗi
+          document.getElementById("loadingSkeleton").style.display = "none";
+          showToast("❌ Lỗi tải danh sách tài liệu", "error");
         }
       }
+
+      // ── Error boundary cơ bản ───────────────────────────────────────────
+      window.addEventListener('error', function(e) {
+        console.error('Lỗi không mong muốn:', e.error);
+        const errorBanner = document.createElement('div');
+        errorBanner.style.cssText = `
+          position: fixed;
+          top: 16px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 9999;
+          background: #fff1f2;
+          color: #9f1239;
+          border: 1px solid #fecdd3;
+          padding: 12px 20px;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 500;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          max-width: 500px;
+        `;
+        errorBanner.textContent = '❌ Đã có lỗi xảy ra. Vui lòng tải lại trang.';
+        document.body.appendChild(errorBanner);
+        setTimeout(() => errorBanner.remove(), 5000);
+      });
 
       // Chạy khi trang load xong
       loadDocuments();
