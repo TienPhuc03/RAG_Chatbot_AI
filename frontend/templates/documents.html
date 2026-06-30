@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quản lý tài liệu</title>
     <style>
+      :root {
+        color-scheme: light;
+        --bg: #eef4fb;
+        --surface: #ffffff;
+        --surface-soft: #f8fbff;
+        --surface-muted: #f7f9fc;
+        --border: #dbe6f2;
+        --text: #0f172a;
+        --muted: #475569;
+        --accent: #0f766e;
+        --accent-strong: #0d9488;
+        --accent-soft: #d9f7ef;
+        --success: #16a34a;
+        --danger: #dc2626;
+        --radius: 20px;
+        --shadow: 0 22px 50px rgba(15, 23, 42, 0.08);
+      }
+
       /* ── Reset & Base ───────────────────────────────────────────── */
       *,
       *::before,
@@ -13,131 +31,253 @@
         margin: 0;
         padding: 0;
       }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
       body {
         font-family: "Segoe UI", system-ui, sans-serif;
-        background: #f4f6fa;
-        color: #1a1a2e;
+        background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 20rem),
+          radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.12), transparent 24rem),
+          var(--bg);
+        color: var(--text);
         min-height: 100vh;
+        line-height: 1.6;
+      }
+
+      img {
+        max-width: 100%;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
       }
 
       /* ── Layout ─────────────────────────────────────────────────── */
       .container {
-        max-width: 1100px;
+        max-width: 1120px;
         margin: 0 auto;
-        padding: 32px 24px;
+        padding: 36px 24px 48px;
       }
+
       h1 {
-        font-size: 22px;
-        font-weight: 600;
+        font-size: clamp(2rem, 2.5vw, 2.5rem);
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      .lead {
+        margin-top: 6px;
+        color: var(--muted);
+        max-width: 760px;
+        font-size: 1rem;
+      }
+
+      .card {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.92));
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 28px;
+        padding: 30px;
+        box-shadow: var(--shadow);
+        margin-bottom: 28px;
+      }
+
+      .card-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        margin-bottom: 18px;
+      }
+
+      .card-subtitle {
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      .top-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .top-actions label {
+        font-size: 0.92rem;
+        color: var(--text);
+        margin-right: 8px;
+      }
+
+      .delete-row {
         margin-bottom: 24px;
       }
 
-      /* ── Upload card ─────────────────────────────────────────────── */
-      .card {
-        background: white;
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-        margin-bottom: 24px;
+      select::-ms-expand {
+        display: none;
       }
-      .card-title {
-        font-size: 14px;
-        font-weight: 600;
-        color: #555;
-        margin-bottom: 16px;
+
+      .upload-header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 26px;
+      }
+
+      .upload-header .headline {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .upload-header .helper {
+        color: var(--muted);
+        max-width: 620px;
+        font-size: 0.96rem;
       }
 
       /* ── Form fields ─────────────────────────────────────────────── */
       .form-row {
-        display: flex;
-        gap: 12px;
-        margin-bottom: 16px;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 18px;
+        margin-bottom: 18px;
       }
+
       .form-group {
         display: flex;
         flex-direction: column;
-        gap: 4px;
-        flex: 1;
-        min-width: 180px;
+        gap: 8px;
+        min-width: 0;
       }
+
       label {
-        font-size: 12px;
-        font-weight: 500;
-        color: #666;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--muted);
       }
+
       input[type="text"],
       select {
-        padding: 8px 12px;
-        border: 1px solid #dde1e7;
-        border-radius: 6px;
-        font-size: 13px;
+        height: 52px;
+        padding: 0 18px;
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        background: var(--surface);
+        color: var(--text);
+        font-size: 0.98rem;
         outline: none;
-        transition: border-color 0.2s;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: linear-gradient(45deg, transparent 50%, #475569 50%),
+          linear-gradient(135deg, #475569 50%, transparent 50%);
+        background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+        background-size: 8px 8px;
+        background-repeat: no-repeat;
+        padding-right: 46px;
       }
+
       input[type="text"]:focus,
       select:focus {
-        border-color: #3b82f6;
+        border-color: rgba(59, 130, 246, 0.6);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+      }
+
+      .input-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 18px;
       }
 
       /* ── Drag-drop zone ──────────────────────────────────────────── */
       #dropZone {
-        border: 2px dashed #cbd5e1;
-        border-radius: 10px;
-        padding: 48px 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        min-height: 190px;
+        border: 2px dashed rgba(59, 130, 246, 0.35);
+        border-radius: 24px;
+        padding: 40px 30px;
         text-align: center;
         cursor: pointer;
-        transition: all 0.2s;
-        background: #fafbfc;
+        transition: all 0.2s ease;
+        background: var(--surface-soft);
       }
+
+      #dropZone:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+      }
+
       #dropZone.dragover {
-        border-color: #3b82f6;
-        background: #eff6ff;
+        border-color: rgba(37, 99, 235, 0.8);
+        background: rgba(59, 130, 246, 0.12);
       }
+
       #dropZone.has-file {
-        border-color: #10b981;
-        background: #f0fdf4;
+        border-color: rgba(16, 185, 129, 0.7);
+        background: rgba(16, 185, 129, 0.12);
       }
+
       .drop-icon {
-        font-size: 40px;
-        margin-bottom: 12px;
+        font-size: 44px;
       }
+
       .drop-text {
-        font-size: 14px;
-        color: #666;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
       }
+
       .drop-subtext {
-        font-size: 12px;
-        color: #94a3b8;
-        margin-top: 6px;
+        font-size: 0.95rem;
+        color: var(--muted);
       }
+
       #fileInput {
         display: none;
       }
+
       .file-selected {
-        font-size: 13px;
-        color: #10b981;
-        font-weight: 500;
-        margin-top: 8px;
+        font-size: 0.94rem;
+        color: var(--success);
+        font-weight: 600;
+        margin-top: 10px;
         display: none;
       }
 
       /* ── Progress bar ────────────────────────────────────────────── */
       #progressWrap {
         display: none;
-        margin-top: 16px;
+        margin-top: 18px;
       }
+
       .progress-label {
-        font-size: 12px;
-        color: #666;
-        margin-bottom: 6px;
+        font-size: 0.88rem;
+        color: var(--muted);
+        margin-bottom: 8px;
       }
+
       .progress-track {
-        height: 8px;
-        background: #e2e8f0;
+        height: 10px;
+        background: #e8eef7;
         border-radius: 999px;
         overflow: hidden;
       }
+
       .progress-fill {
         height: 100%;
         background: linear-gradient(90deg, #3b82f6, #6366f1);
@@ -145,98 +285,181 @@
         transition: width 0.3s ease;
         width: 0%;
       }
+
       #progressPct {
-        font-size: 12px;
-        color: #3b82f6;
-        font-weight: 600;
-        margin-top: 4px;
+        font-size: 0.86rem;
+        color: #2563eb;
+        font-weight: 700;
+        margin-top: 8px;
       }
 
-      /* ── Upload button ───────────────────────────────────────────── */
+      /* ── Buttons ────────────────────────────────────────────────── */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        border-radius: 22px;
+        padding: 0 16px;
+        min-height: 44px;
+        font-weight: 700;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        background: var(--surface);
+        color: var(--text);
+      }
+
+      .btn-sm {
+        padding: 10px 18px;
+        min-height: 40px;
+        border-radius: 20px;
+        font-size: 0.92rem;
+      }
+
+      .btn-danger {
+        background: #fee2e2;
+        border-color: #fecaca;
+        color: #b91c1c;
+        margin-bottom: 18px;
+      }
+
+      .btn-danger:hover {
+        background: #fef2f2;
+      }
+
+      .delete-row {
+        margin-bottom: 22px;
+      }
+
       #uploadBtn {
-        margin-top: 16px;
-        padding: 10px 28px;
-        background: #3b82f6;
+        width: 100%;
+        margin-top: 20px;
+        padding: 14px 24px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
         color: white;
         border: none;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 500;
+        border-radius: 22px;
+        font-size: 1rem;
+        font-weight: 700;
         cursor: pointer;
-        transition: background 0.2s;
+        transition: transform 0.2s ease, background 0.2s ease;
       }
-      #uploadBtn:hover {
-        background: #2563eb;
+
+      #uploadBtn:hover:not(:disabled) {
+        transform: translateY(-1px);
       }
+
       #uploadBtn:disabled {
         background: #93c5fd;
         cursor: not-allowed;
       }
 
+      .btn-delete {
+        background: none;
+        border: 1px solid #fca5a5;
+        color: #dc2626;
+        padding: 10px 18px;
+        border-radius: 18px;
+        font-size: 0.92rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        align-self: flex-start;
+        margin-bottom: 18px;
+      }
+
+      .btn-delete:hover {
+        background: #fee2e2;
+      }
+
       /* ── Filter bar ──────────────────────────────────────────────── */
       .filter-bar {
         display: flex;
+        flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 16px;
-        flex-wrap: wrap;
-        gap: 12px;
+        gap: 14px;
+        margin-bottom: 18px;
+        padding: 18px 22px;
+        border-radius: 18px;
+        background: var(--surface);
+        border: 1px solid rgba(148, 163, 184, 0.16);
       }
+
       .filter-bar h2 {
-        font-size: 15px;
-        font-weight: 600;
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0;
       }
+
       #filterSelect {
-        padding: 7px 12px;
-        border: 1px solid #dde1e7;
-        border-radius: 6px;
-        font-size: 13px;
-        min-width: 180px;
+        min-width: 200px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
       }
 
       /* ── Table ───────────────────────────────────────────────────── */
       table {
         width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.95rem;
+        overflow: hidden;
+        border-radius: 22px;
+        background: var(--surface);
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.08);
       }
+
       th {
         text-align: left;
-        padding: 10px 14px;
-        font-size: 11px;
-        font-weight: 600;
-        color: #94a3b8;
+        padding: 16px 18px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--muted);
         text-transform: uppercase;
-        letter-spacing: 0.04em;
-        border-bottom: 1px solid #e2e8f0;
+        letter-spacing: 0.12em;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+        background: #f8fbff;
       }
+
       td {
-        padding: 12px 14px;
-        border-bottom: 1px solid #f1f5f9;
+        padding: 18px 18px;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.9);
         vertical-align: middle;
       }
+
       tr:last-child td {
         border-bottom: none;
       }
+
       tr:hover td {
-        background: #fafbff;
+        background: rgba(59, 130, 246, 0.05);
       }
+
       .filename {
-        font-weight: 500;
-        color: #1e293b;
+        font-weight: 700;
+        color: var(--text);
       }
+
       .course-tag {
-        display: inline-block;
-        background: #eff6ff;
-        color: #3b82f6;
-        font-size: 11px;
-        font-weight: 500;
-        padding: 2px 8px;
-        border-radius: 99px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 72px;
+        background: rgba(59, 130, 246, 0.12);
+        color: #2563eb;
+        font-size: 0.82rem;
+        font-weight: 700;
+        padding: 6px 10px;
+        border-radius: 999px;
       }
+
       .empty-row td {
         text-align: center;
-        color: #94a3b8;
+        color: var(--muted);
         padding: 40px;
       }
 
@@ -244,72 +467,69 @@
       .badge {
         display: inline-flex;
         align-items: center;
-        gap: 5px;
-        font-size: 11px;
-        font-weight: 600;
-        padding: 3px 10px;
-        border-radius: 99px;
+        gap: 8px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        padding: 8px 14px;
+        border-radius: 999px;
       }
+
       .badge::before {
         content: "";
-        width: 6px;
-        height: 6px;
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
         display: inline-block;
         flex-shrink: 0;
       }
+
       .badge-PENDING {
-        background: #fff7ed;
-        color: #c2410c;
+        background: #fffbeb;
+        color: #92400e;
       }
+
       .badge-PENDING::before {
-        background: #f97316;
+        background: #f59e0b;
       }
+
       .badge-PROCESSING {
         background: #eff6ff;
         color: #1d4ed8;
         animation: pulse 1.5s infinite;
       }
+
       .badge-PROCESSING::before {
         background: #3b82f6;
       }
+
       .badge-INDEXED {
         background: #f0fdf4;
-        color: #15803d;
+        color: #166534;
       }
+
       .badge-INDEXED::before {
         background: #22c55e;
       }
+
       .badge-FAILED {
-        background: #fff1f2;
-        color: #be123c;
+        background: #fef2f2;
+        color: #991b1b;
       }
+
       .badge-FAILED::before {
-        background: #f43f5e;
+        background: #ef4444;
       }
+
       @keyframes pulse {
-        0%,
-        100% {
+        from {
           opacity: 1;
         }
         50% {
-          opacity: 0.5;
+          opacity: 0.55;
         }
-      }
-
-      /* ── Delete button ───────────────────────────────────────────── */
-      .btn-delete {
-        background: none;
-        border: 1px solid #fca5a5;
-        color: #dc2626;
-        padding: 4px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-      .btn-delete:hover {
-        background: #fee2e2;
+        to {
+          opacity: 1;
+        }
       }
 
       /* ── Confirm dialog ──────────────────────────────────────────── */
@@ -317,53 +537,67 @@
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.45);
+        background: rgba(15, 23, 42, 0.45);
         z-index: 100;
         align-items: center;
         justify-content: center;
+        padding: 16px;
       }
+
       #overlay.show {
         display: flex;
       }
+
       .dialog {
-        background: white;
-        border-radius: 12px;
+        background: var(--surface);
+        border-radius: 26px;
         padding: 28px;
-        max-width: 380px;
-        width: 90%;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        max-width: 420px;
+        width: 100%;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
       }
+
       .dialog h3 {
-        font-size: 16px;
-        margin-bottom: 8px;
+        font-size: 1.1rem;
+        margin-bottom: 10px;
       }
+
       .dialog p {
-        font-size: 13px;
-        color: #64748b;
-        margin-bottom: 20px;
+        font-size: 0.95rem;
+        color: var(--muted);
+        margin-bottom: 22px;
       }
+
       .dialog-actions {
         display: flex;
         justify-content: flex-end;
-        gap: 10px;
+        gap: 12px;
       }
-      .btn-cancel {
-        padding: 8px 18px;
-        border: 1px solid #dde1e7;
-        border-radius: 6px;
-        background: white;
-        font-size: 13px;
-        cursor: pointer;
-      }
+
+      .btn-cancel,
       .btn-confirm-delete {
-        padding: 8px 18px;
-        border: none;
-        background: #dc2626;
-        color: white;
-        border-radius: 6px;
-        font-size: 13px;
+        min-width: 110px;
+      }
+
+      .btn-cancel {
+        padding: 10px 18px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--surface);
+        font-size: 0.95rem;
         cursor: pointer;
       }
+
+      .btn-confirm-delete {
+        padding: 10px 18px;
+        border: none;
+        background: var(--danger);
+        color: white;
+        border-radius: 16px;
+        font-size: 0.95rem;
+        cursor: pointer;
+      }
+
       .btn-confirm-delete:hover {
         background: #b91c1c;
       }
@@ -373,39 +607,97 @@
         position: fixed;
         bottom: 24px;
         right: 24px;
-        padding: 12px 20px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 500;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 14px 20px;
+        border-radius: 16px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
         transform: translateY(80px);
         opacity: 0;
-        transition: all 0.3s;
+        transition: transform 0.3s ease, opacity 0.3s ease;
         z-index: 200;
       }
+
       #toast.show {
         transform: translateY(0);
         opacity: 1;
       }
+
       #toast.success {
         background: #ecfdf5;
         color: #065f46;
         border: 1px solid #a7f3d0;
       }
+
       #toast.error {
         background: #fff1f2;
         color: #9f1239;
         border: 1px solid #fecdd3;
+      }
+
+      @media (max-width: 720px) {
+        .container {
+          padding: 28px 16px 36px;
+        }
+
+        .card {
+          padding: 24px;
+        }
+
+        .filter-bar {
+          padding: 16px;
+        }
       }
     </style>
   </head>
   <body>
     <div class="container">
       <h1>📚 Quản lý tài liệu môn học</h1>
+      <p class="lead">Tải lên và theo dõi tài liệu học tập nhanh chóng, trực quan. Giao diện được thiết kế để bạn xử lý các file và trạng thái xử lý dễ dàng hơn.</p>
 
       <!-- ── Upload card ── -->
       <div class="card">
         <div class="card-title">Tải tài liệu lên</div>
+
+        <!-- FILTER DROPDOWN: chọn courseCode -->
+        <!-- Lọc theo môn học -->
+        <div class="mb-3">
+          <form method="get" action="/documents" class="top-actions">
+            <label>Lọc theo môn học:</label>
+            <select
+              name="courseCode"
+              aria-label="Lọc tài liệu theo môn học"
+              onchange="this.form.submit()"
+            >
+              <option value="ALL" th:selected="${courseCode == 'ALL'}">
+                Tất cả
+              </option>
+              <option
+                th:each="cc : ${courseCodes}"
+                th:value="${cc}"
+                th:text="${cc}"
+                th:selected="${cc == courseCode}"
+              ></option>
+            </select>
+          </form>
+        </div>
+
+        <!-- Form upload -->
+        <form
+          th:action="'/api/documents/' + ${doc.id}"
+          method="post"
+          th:attr="data-filename=${doc.sourceFileName}"
+          onsubmit="
+            return confirm(
+              'Xóa tài liệu \'' +
+                this.dataset.filename +
+                '\'? Hành động này không thể hoàn tác.',
+            );
+          "
+        >
+          <input type="hidden" name="_method" value="DELETE" />
+          <button type="submit" class="btn btn-sm btn-danger">🗑 Xóa</button>
+        </form>
 
         <!-- Form metadata -->
         <div class="form-row">

@@ -1,17 +1,8 @@
 package com.ragchatbot.api;
 
-import com.ragchatbot.application.dto.document.DocumentStatusResponse;
-import com.ragchatbot.application.dto.document.DocumentUploadResponse;
-import com.ragchatbot.application.usecase.document.GetDocumentStatusUseCase;
-import com.ragchatbot.application.usecase.document.GetDocumentsUseCase;
-import com.ragchatbot.application.usecase.document.UploadDocumentUseCase;
-import com.ragchatbot.domain.model.Document;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.util.List;
 import java.util.UUID;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +13,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.ragchatbot.application.dto.document.DocumentStatusResponse;
+import com.ragchatbot.application.dto.document.DocumentUploadResponse;
+import com.ragchatbot.application.usecase.document.DeleteDocumentUseCase;
+import com.ragchatbot.application.usecase.document.GetDocumentStatusUseCase;
+import com.ragchatbot.application.usecase.document.GetDocumentsUseCase;
+import com.ragchatbot.application.usecase.document.UploadDocumentUseCase;
+import com.ragchatbot.domain.model.Document;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 @RestController
 @RequestMapping("/api/documents")
 public class DocumentController {
@@ -29,15 +33,19 @@ public class DocumentController {
     private final UploadDocumentUseCase uploadDocumentUseCase;
     private final GetDocumentsUseCase getDocumentsUseCase;
     private final GetDocumentStatusUseCase getDocumentStatusUseCase;
+    private final DeleteDocumentUseCase deleteDocumentUseCase;
+
 
     public DocumentController(
             UploadDocumentUseCase uploadDocumentUseCase,
             GetDocumentsUseCase getDocumentsUseCase,
-            GetDocumentStatusUseCase getDocumentStatusUseCase
+            GetDocumentStatusUseCase getDocumentStatusUseCase,  
+            DeleteDocumentUseCase deleteDocumentUseCase
     ) {
         this.uploadDocumentUseCase = uploadDocumentUseCase;
         this.getDocumentsUseCase = getDocumentsUseCase;
         this.getDocumentStatusUseCase = getDocumentStatusUseCase;
+        this.deleteDocumentUseCase = deleteDocumentUseCase;
     }
 
     @Operation(
@@ -86,6 +94,9 @@ public class DocumentController {
     }
 
     @GetMapping("/{id}/status")
+    // Lấy trạng thái xử lý của document (parsing, indexing) dựa vào ID.
+    // @param id UUID của document
+    // @return DocumentStatusResponse chứa thông tin trạng thái
     public ResponseEntity<DocumentStatusResponse> getDocumentStatus(@PathVariable UUID id) {
         DocumentStatusResponse response = getDocumentStatusUseCase.execute(id);
         return ResponseEntity.ok(response);
@@ -99,8 +110,13 @@ public class DocumentController {
             @ApiResponse(responseCode = "204", description = "Deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Document not found")
     })
+
     @DeleteMapping("/{id}")
+    // Xóa document và toàn bộ dữ liệu liên quan (chunks, vectors).
+    // @param documentId UUID của document cần xóa
+    // @throws RuntimeException nếu document không tồn tại
     public ResponseEntity<Void> deleteDocument(@PathVariable UUID id) {
+        deleteDocumentUseCase.execute(id);
         return ResponseEntity.noContent().build();
     }
 }

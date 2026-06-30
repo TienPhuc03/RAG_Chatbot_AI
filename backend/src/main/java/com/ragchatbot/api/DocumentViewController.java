@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.ragchatbot.application.usecase.document.GetDocumentsUseCase;
 import com.ragchatbot.domain.model.Document;
 import com.ragchatbot.infrastructure.persistence.ChunkRepository;
+import com.ragchatbot.infrastructure.persistence.DocumentRepository;
 
 /**
  * Controller render trang HTML quản lý tài liệu (Thymeleaf).
@@ -26,13 +27,16 @@ public class DocumentViewController {
 
     private final GetDocumentsUseCase getDocumentsUseCase;
     private final ChunkRepository chunkRepository;
+    private final DocumentRepository documentRepository;
 
     public DocumentViewController(
             GetDocumentsUseCase getDocumentsUseCase,
-            ChunkRepository chunkRepository
+            ChunkRepository chunkRepository,
+            DocumentRepository documentRepository
     ) {
         this.getDocumentsUseCase = getDocumentsUseCase;
         this.chunkRepository = chunkRepository;
+        this.documentRepository = documentRepository;
     }
 
     /**
@@ -57,6 +61,14 @@ public class DocumentViewController {
                         Document::getId,
                         d -> chunkRepository.countByDocumentId(d.getId())
                 ));
+
+        // Lấy danh sách courseCode duy nhất để đổ vào dropdown filter
+        // distinct() loại bỏ trùng lặp, sorted() sắp xếp alphabet cho dễ chọn
+        List<String> courseCodes = documentRepository.findAll().stream()
+                .map(Document::getCourseCode)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
 
         // Truyền dữ liệu xuống template
         model.addAttribute("documents", docs);

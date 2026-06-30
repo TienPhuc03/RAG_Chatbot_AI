@@ -1,10 +1,11 @@
 package com.ragchatbot.application.usecase.document;
 
-import com.ragchatbot.domain.model.Document;
-import com.ragchatbot.infrastructure.persistence.DocumentRepository;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import com.ragchatbot.domain.model.Document;
+import com.ragchatbot.infrastructure.persistence.DocumentRepository;
 
 @Service
 public class GetDocumentsUseCase {
@@ -15,10 +16,17 @@ public class GetDocumentsUseCase {
         this.documentRepository = documentRepository;
     }
 
-    /**
-     * Lấy danh sách document theo courseCode.
+    /*
+     * Lấy danh sách document theo courseCode.sort theo created_at mới nhất trước.
+     * Nếu courseCode = "ALL" hoặc rỗng, trả về toàn bộ document.
      */
+     
     public List<Document> execute(String courseCode) {
-        return documentRepository.findByCourseCode(courseCode);
+         // courseCode = "ALL" nghĩa là FE muốn xem tất cả môn học (dropdown filter)
+        if (courseCode == null || courseCode.isBlank() || courseCode.equalsIgnoreCase("ALL")) {
+        return documentRepository.findAllByOrderByCreatedAtDesc();
+        } else {
+            return documentRepository.findByCourseCodeOrderByCreatedAtDesc(courseCode);
+        }
     }
 }
