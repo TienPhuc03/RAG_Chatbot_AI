@@ -1,0 +1,62 @@
+[
+  {
+    "instruction": "Slide giới thiệu những chủ đề nào liên quan đến việc áp dụng và đánh giá một công nghệ cụ thể?",
+    "output": "Slide giới thiệu những chủ đề liên quan đến việc áp dụng và đánh giá một công nghệ cụ thể là Using JPA (Sử dụng JPA), Demo (Trình diễn), và Advantages and Disadvantages (Ưu điểm và Nhược điểm)."
+  },
+  {
+    "instruction": "Slide nêu bật những lợi ích nào của ORM đối với việc duy trì mã nguồn?",
+    "output": "Slide nêu bật rằng ORM giúp cải thiện khả năng bảo trì mã nguồn vì mã nguồn trở nên sạch sẽ hơn và dễ hiểu hơn khi nó tập trung vào logic nghiệp vụ, thay vì chi tiết cơ sở dữ liệu."
+  },
+  {
+    "instruction": "Hibernate được mô tả là gì trong các framework ORM phổ biến cho Java?",
+    "output": "Hibernate được mô tả là việc triển khai JPA được sử dụng rộng rãi nhất, cung cấp một bộ tính năng phong phú và các tùy chọn tùy chỉnh rộng rãi."
+  },
+  {
+    "instruction": "Theo slide, những nội dung nào liên quan đến việc mô tả các khía cạnh của dữ liệu hoặc cấu trúc chương trình?",
+    "output": "Theo slide, những nội dung liên quan đến việc mô tả các khía cạnh của dữ liệu hoặc cấu trúc chương trình bao gồm Annotations (Chú thích) và Relationships (Quan hệ)."
+  },
+  {
+    "instruction": "Theo slide, một trong những lợi ích quan trọng của ORM là khả năng độc lập với cơ sở dữ liệu. Điều này có nghĩa là gì?",
+    "output": "Khả năng độc lập với cơ sở dữ liệu của ORM có nghĩa là bạn có thể chuyển đổi cơ sở dữ liệu mà không cần viết lại mã ứng dụng (ở một mức độ nhất định)."
+  },
+  {
+    "instruction": "Điểm khác biệt chính của Spring Data JPA so với các implementation JPA khác là gì?",
+    "output": "Spring Data JPA là một lớp trừu tượng hóa trên các nhà cung cấp JPA, đơn giản hóa việc truy cập dữ liệu và giảm thiểu mã mẫu (boilerplate code)."
+  },
+  {
+    "instruction": "Dựa vào nội dung slide, hãy liệt kê các mục chính sẽ được trình bày trong bài giảng?",
+    "output": "Dựa vào nội dung slide, các mục chính sẽ được trình bày bao gồm: Introduction (Giới thiệu), Key Concepts (Các khái niệm chính), Annotations (Chú thích), Relationships (Quan hệ), Using JPA (Sử dụng JPA), Demo (Trình diễn), và Advantages and Disadvantages (Ưu điểm và Nhược điểm)."
+  },
+  {
+    "instruction": "Theo nội dung slide, lợi ích chính của ORM trong việc tăng năng suất là gì?",
+    "output": "Lợi ích chính của ORM trong việc tăng năng suất là bạn viết ít mã hơn vì ORM xử lý các tác vụ truy cập dữ liệu ở cấp thấp."
+  },
+  {
+    "instruction": "Hãy định nghĩa và minh họa các khái niệm cốt lõi của JPA như entities, annotations, persistence context, entity manager và JPQL.",
+    "output": "Các khái niệm cốt lõi của JPA bao gồm: Entities (các đối tượng Java đại diện cho bảng trong cơ sở dữ liệu), Annotations (chú thích để ánh xạ các đối tượng và thuộc tính với cơ sở dữ liệu), Persistence Context (vùng chứa các đối tượng được quản lý), Entity Manager (giao diện để tương tác với persistence context và thực hiện các thao tác dữ liệu), và JPQL (Ngôn ngữ truy vấn Java, một ngôn ngữ truy vấn hướng đối tượng tương tự SQL)."
+  },
+  {
+    "instruction": "Hãy giải thích JPA là gì và vai trò của nó trong việc lưu trữ dữ liệu cho các ứng dụng Java.",
+    "output": "JPA (Java Persistence API) là một công nghệ Java dùng để lưu trữ dữ liệu, giúp quản lý và tương tác với cơ sở dữ liệu trong các ứng dụng Java."
+  },
+  {
+    "instruction": "Theo nội dung slide, lợi ích chính của việc sử dụng ORM trong ứng dụng hướng đối tượng là gì?",
+    "output": "Lợi ích chính là cho phép lập trình viên tập trung vào logic nghiệp vụ thay vì các chi tiết lưu trữ dữ liệu bên dưới."
+  },
+  {
+    "instruction": "ORM giúp lập trình viên ứng dụng hướng đối tượng có thể bỏ qua những khía cạnh nào của cơ sở dữ liệu?",
+    "output": "ORM cho phép lập trình viên bỏ qua các chi tiết về lưu trữ dữ liệu bên dưới."
+  },
+  {
+    "instruction": "Nêu bật những ưu điểm của việc sử dụng JPA so với các phương pháp JDBC truyền thống.",
+    "output": "Ưu điểm của JPA so với JDBC truyền thống bao gồm việc giảm thiểu mã boilerplate (mã lặp lại) và cho phép nhà phát triển tập trung hơn vào logic nghiệp vụ."
+  },
+  {
+    "instruction": "DataNucleus cung cấp những tính năng gì để hỗ trợ việc lưu trữ dữ liệu?",
+    "output": "DataNucleus cung cấp khả năng lưu trữ dễ dàng vào các kho dữ liệu RDBMS. Nó đi kèm với ngôn ngữ truy vấn JPQL riêng, có cấu trúc tương tự \"SQL\", cho phép truy vấn dữ liệu bằng một ngôn ngữ tương tự như những gì kho dữ liệu hiểu."
+  },
+  {
+    "instruction": "ORM (Object Relational Mapping) giúp ích gì cho việc làm việc với cơ sở dữ liệu trong các ứng dụng hướng đối tượng?",
+    "output": "ORM giúp làm việc với cơ sở dữ liệu dễ dàng hơn trong các ứng dụng hướng đối tượng."
+  }
+]
