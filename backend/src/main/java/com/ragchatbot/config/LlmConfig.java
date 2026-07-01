@@ -1,22 +1,45 @@
 package com.ragchatbot.config;
 
+import com.ragchatbot.domain.port.LlmInferenceService;
+import com.ragchatbot.infrastructure.llm.OllamaLlmInferenceService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestClient;
 
+@Configuration
 @ConfigurationProperties(prefix = "rag.llm")
-public record LlmConfig(
+public class LlmConfig {
 
-        String ollamaBaseUrl,
+    private String ollamaBaseUrl;
+    private String ollamaModel;
 
-        String ollamaModel,
+    // ───────────── getters / setters ─────────────
 
-        String geminiApiKey,
+    public String getOllamaBaseUrl() {
+        return ollamaBaseUrl;
+    }
 
-        String geminiChatModel,
+    public void setOllamaBaseUrl(String ollamaBaseUrl) {
+        this.ollamaBaseUrl = ollamaBaseUrl;
+    }
 
-        String geminiEmbeddingModel,
+    public String getOllamaModel() {
+        return ollamaModel;
+    }
 
-        String geminiTimeout,
+    public void setOllamaModel(String ollamaModel) {
+        this.ollamaModel = ollamaModel;
+    }
 
-        Integer geminiMaxRetries
-) {
+    // ───────────── Bean definitions ─────────────
+
+    @Bean("ollamaLlm")
+    @Qualifier("ollamaLlm")
+    public LlmInferenceService ollamaLlmInferenceService(RestClient restClient) {
+        String url = ollamaBaseUrl != null ? ollamaBaseUrl : "http://localhost:11434";
+        String mdl = ollamaModel != null ? ollamaModel : "llama3";
+        return new OllamaLlmInferenceService(restClient, url, mdl);
+    }
 }

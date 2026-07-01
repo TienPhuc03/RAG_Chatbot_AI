@@ -70,6 +70,9 @@ public class BenchmarkResult {
     @Column(name = "retrieval_hit")
     private Boolean retrievalHit;
 
+    @Column(name = "retrieved_contexts_text", columnDefinition = "TEXT")
+    private String retrievedContextsText;
+
     @Column(name = "latency_ms")
     private Long latencyMs;
 
@@ -194,6 +197,14 @@ public class BenchmarkResult {
 
     public void setRetrievalHit(Boolean retrievalHit) {
         this.retrievalHit = retrievalHit;
+    }
+
+    public String getRetrievedContextsText() {
+        return retrievedContextsText;
+    }
+
+    public void setRetrievedContextsText(String retrievedContextsText) {
+        this.retrievedContextsText = retrievedContextsText;
     }
 
     public Long getLatencyMs() {

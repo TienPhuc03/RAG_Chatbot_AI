@@ -125,13 +125,29 @@ public class QdrantVectorStoreService implements VectorStoreService {
 
     @Override
     public List<RetrievedContext> search(List<Float> queryEmbedding, int topK, String courseCode, String chapterCode) {
+        return searchInCollection(queryEmbedding, topK, courseCode, chapterCode, properties.getCollectionName());
+    }
+
+    @Override
+    public List<RetrievedContext> search(List<Float> queryEmbedding, int topK,
+                                          String courseCode, String chapterCode,
+                                          String collectionName) {
+        String effectiveCollection = (collectionName != null && !collectionName.isBlank())
+                ? collectionName
+                : properties.getCollectionName();
+        return searchInCollection(queryEmbedding, topK, courseCode, chapterCode, effectiveCollection);
+    }
+
+    private List<RetrievedContext> searchInCollection(List<Float> queryEmbedding, int topK,
+                                                       String courseCode, String chapterCode,
+                                                       String collection) {
         if (topK <= 0) {
             return List.of();
         }
         validateEmbedding(queryEmbedding, -1);
 
         SearchPoints.Builder searchBuilder = SearchPoints.newBuilder()
-                .setCollectionName(properties.getCollectionName())
+                .setCollectionName(collection)
                 .addAllVector(queryEmbedding)
                 .setLimit(topK)
                 .setWithPayload(enable(true));

@@ -41,7 +41,7 @@ public class SendMessageUseCase {
             MessageRepository messageRepository,
             EmbeddingService embeddingService,
             VectorStoreService vectorStoreService,
-            LlmInferenceService llmInferenceService,
+            @org.springframework.beans.factory.annotation.Qualifier("geminiLlm") LlmInferenceService llmInferenceService,
             ObjectMapper objectMapper
     ) {
         this.conversationRepository = conversationRepository;

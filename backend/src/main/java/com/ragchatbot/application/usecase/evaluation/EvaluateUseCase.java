@@ -69,7 +69,7 @@ public class EvaluateUseCase {
 
     private ExperimentType parseExperimentType(String value) {
         if (!StringUtils.hasText(value)) {
-            return ExperimentType.RAG;
+            return ExperimentType.RAG_SYSTEM;
         }
         return ExperimentType.valueOf(value.trim().toUpperCase());
     }

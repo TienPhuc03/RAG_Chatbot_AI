@@ -35,6 +35,9 @@ management:
         enabled: true
 
 rag:
+  llm:
+    ollama-base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    ollama-model: ${OLLAMA_MODEL:llama3}
   vector-store:
     qdrant-host: ${QDRANT_HOST:localhost}
     qdrant-port: ${QDRANT_PORT:6333}

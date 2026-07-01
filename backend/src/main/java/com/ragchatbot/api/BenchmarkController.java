@@ -1,11 +1,13 @@
 package com.ragchatbot.api;
 
 import com.ragchatbot.application.dto.benchmark.BenchmarkSummaryDto;
+import com.ragchatbot.domain.model.TestCase;
 import com.ragchatbot.infrastructure.benchmark.BenchmarkJobRegistry;
 import com.ragchatbot.infrastructure.benchmark.BenchmarkJobRegistry.JobSnapshot;
 import com.ragchatbot.infrastructure.benchmark.BenchmarkJobStatus;
 import com.ragchatbot.infrastructure.benchmark.BenchmarkRunnerService;
 import com.ragchatbot.infrastructure.benchmark.BenchmarkRunnerService.BenchmarkConfig;
+import com.ragchatbot.infrastructure.benchmark.TestSetLoader;
 import com.ragchatbot.infrastructure.persistence.BenchmarkResultRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,13 +45,16 @@ public class BenchmarkController {
     private final BenchmarkRunnerService benchmarkRunnerService;
     private final BenchmarkJobRegistry jobRegistry;
     private final BenchmarkResultRepository benchmarkResultRepository;
+    private final TestSetLoader testSetLoader;
 
     public BenchmarkController(BenchmarkRunnerService benchmarkRunnerService,
                                 BenchmarkJobRegistry jobRegistry,
-                                BenchmarkResultRepository benchmarkResultRepository) {
+                                BenchmarkResultRepository benchmarkResultRepository,
+                                TestSetLoader testSetLoader) {
         this.benchmarkRunnerService = benchmarkRunnerService;
         this.jobRegistry = jobRegistry;
         this.benchmarkResultRepository = benchmarkResultRepository;
+        this.testSetLoader = testSetLoader;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -82,15 +87,21 @@ public class BenchmarkController {
                 + " | embedding=" + request.embeddingModel()
                 + " | experiment=" + request.experimentType();
 
+        // Load test cases để biết tổng số lượng (dùng cho tiến trình poll)
+        List<TestCase> testCases = testSetLoader.loadTestCases();
+
         // Đăng ký job vào registry (PENDING) trước khi gọi @Async để tránh race condition
-        jobRegistry.register(jobId, configDescription, 0);
+        jobRegistry.register(jobId, configDescription, testCases.size());
+
         BenchmarkConfig config = new BenchmarkConfig(
             request.strategy(),
             request.embeddingModel(),
-            request.experimentType()
+            request.experimentType(),
+            request.collectionName()
         );
 
-        benchmarkRunnerService.runBenchmark(config);
+        // Gọi @Async — trả về ngay, benchmark chạy trên thread khác
+        benchmarkRunnerService.runBenchmark(jobId, config);
 
         return ResponseEntity
             .status(HttpStatus.ACCEPTED)
@@ -100,15 +111,6 @@ public class BenchmarkController {
                     configDescription,
                     Instant.now()
             ));
-        // Gọi @Async — trả về ngay, benchmark chạy trên thread khác
-        // benchmarkRunnerService.runBenchmark(
-        //         jobId,
-        //         new BenchmarkConfig(request.strategy(), request.embeddingModel(), request.experimentType())
-        // );
-
-        // return ResponseEntity
-        //         .status(HttpStatus.ACCEPTED)
-        //         .body(new RunBenchmarkResponse(jobId, BenchmarkJobStatus.PENDING, configDescription, Instant.now()));
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -172,7 +174,8 @@ public class BenchmarkController {
      *
      * @param strategy       Tên enum ChunkingStrategy (FIXED_SIZE | SEMANTIC | HIERARCHICAL)
      * @param embeddingModel Tên enum EmbeddingModel  (MULTILINGUAL_E5_BASE | TEXT_EMBEDDING_3_SMALL | ...)
-     * @param experimentType Tên enum ExperimentType  (RAG | FINETUNE)
+     * @param experimentType Tên enum ExperimentType  (RAG_SYSTEM | FINE_TUNED_MODEL)
+     * @param collectionName Tên Qdrant collection (có thể null, dùng collection mặc định)
      */
     public record RunBenchmarkRequest(
             @NotBlank(message = "strategy không được để trống")
@@ -191,10 +194,12 @@ public class BenchmarkController {
 
             @NotBlank(message = "experimentType không được để trống")
             @Pattern(
-                    regexp = "RAG|FINETUNE",
-                    message = "experimentType phải là RAG hoặc FINETUNE"
+                    regexp = "RAG_SYSTEM|FINE_TUNED_MODEL",
+                    message = "experimentType phải là RAG_SYSTEM hoặc FINE_TUNED_MODEL"
             )
-            String experimentType
+            String experimentType,
+
+            String collectionName
     ) {}
 
     /**
