@@ -64,10 +64,8 @@ public class BenchmarkController {
      */
     @Operation(
             summary = "Chạy benchmark",
-            description = """
-                    Khởi động một benchmark run với cấu hình chỉ định.
-                    Trả về jobId ngay lập tức; client poll GET /jobs/{jobId}/status để theo dõi tiến trình.
-                    """
+            description = "Khởi động một benchmark run với cấu hình chỉ định. "
+                    + "Trả về jobId ngay lập tức; client poll GET /jobs/{jobId}/status để theo dõi tiến trình."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "202", description = "Job đã được tạo, đang chạy async"),
@@ -151,10 +149,8 @@ public class BenchmarkController {
 
     @Operation(
             summary = "Kết quả benchmark tổng hợp",
-            description = """
-                    Trả về danh sách aggregate metrics nhóm theo (chunkingStrategy × embeddingModel × experimentType).
-                    Dùng cho Research Dashboard hiển thị bảng so sánh.
-                    """
+            description = "Trả về danh sách aggregate metrics nhóm theo chunkingStrategy, embeddingModel và experimentType. "
+                    + "Dùng cho Research Dashboard hiển thị bảng so sánh."
     )
     @ApiResponse(responseCode = "200", description = "Danh sách kết quả tổng hợp")
     @GetMapping("/results")

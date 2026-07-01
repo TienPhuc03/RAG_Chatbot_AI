@@ -12,12 +12,15 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.hibernate.annotations.UuidGenerator;
+
 @Entity
 @Table(name = "documents")
 public class Document {
 
     @Id
-    @Column(name = "documents_id")
+    @UuidGenerator
+    @Column(name = "documents_id", updatable = false, nullable = false)
     private UUID id;
 
     @Column(nullable = false, length = 255)

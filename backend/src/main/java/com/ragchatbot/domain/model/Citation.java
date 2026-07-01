@@ -3,13 +3,15 @@ package com.ragchatbot.domain.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "citations")
 
 public class Citation {
     @Id
-    @Column(name = "citations_id")
+    @UuidGenerator
+    @Column(name = "citations_id", updatable = false, nullable = false)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)

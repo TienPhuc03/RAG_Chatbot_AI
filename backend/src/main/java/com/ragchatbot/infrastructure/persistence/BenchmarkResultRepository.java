@@ -16,24 +16,22 @@ public interface BenchmarkResultRepository extends JpaRepository<BenchmarkResult
      * Mỗi hàng trả về một BenchmarkSummaryDto chứa trung bình 6 metrics, số lần chạy,
      * và trung bình latency — dùng cho endpoint GET /api/benchmark/results.
      */
-    @Query("""
-            SELECT new com.ragchatbot.application.dto.benchmark.BenchmarkSummaryDto(
-                CAST(b.chunkingStrategy AS string),
-                CAST(b.embeddingModel   AS string),
-                CAST(b.experimentType   AS string),
-                COUNT(b),
-                AVG(b.exactMatch),
-                AVG(b.f1Score),
-                AVG(b.faithfulness),
-                AVG(b.answerRelevancy),
-                AVG(b.contextPrecision),
-                AVG(b.contextRecall),
-                AVG(CAST(b.latencyMs AS double))
-            )
-            FROM BenchmarkResult b
-            GROUP BY b.chunkingStrategy, b.embeddingModel, b.experimentType
-            ORDER BY b.chunkingStrategy, b.embeddingModel
-            """)
+    @Query("SELECT new com.ragchatbot.application.dto.benchmark.BenchmarkSummaryDto("
+            + "CAST(b.chunkingStrategy AS string), "
+            + "CAST(b.embeddingModel AS string), "
+            + "CAST(b.experimentType AS string), "
+            + "COUNT(b), "
+            + "AVG(b.exactMatch), "
+            + "AVG(b.f1Score), "
+            + "AVG(b.faithfulness), "
+            + "AVG(b.answerRelevancy), "
+            + "AVG(b.contextPrecision), "
+            + "AVG(b.contextRecall), "
+            + "AVG(CAST(b.latencyMs AS double))"
+            + ") "
+            + "FROM BenchmarkResult b "
+            + "GROUP BY b.chunkingStrategy, b.embeddingModel, b.experimentType "
+            + "ORDER BY b.chunkingStrategy, b.embeddingModel")
     List<BenchmarkSummaryDto> findAverageMetricsByStrategyAndModel();
 }
 

@@ -20,13 +20,11 @@ import com.ragchatbot.infrastructure.persistence.MessageRepository;
 import com.ragchatbot.infrastructure.persistence.CitationRepository; // Đảm bảo bạn đã tạo interface này
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 // @Testcontainers(disabledWithoutDocker = true)
 @DataJpaTest
@@ -57,7 +55,6 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
     @Test
     void savesDocumentAndChunk() {
         Document document = new Document();
-        document.setId(UUID.randomUUID());
         document.setTitle("Bai giang Chuong 1");
         document.setSourceFileName("chuong-1.pdf");
         document.setContentType("application/pdf");
@@ -70,7 +67,6 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
         Document savedDocument = documentRepository.saveAndFlush(document);
 
         Chunk chunk = new Chunk();
-        chunk.setId(UUID.randomUUID());
         chunk.setDocument(savedDocument);
         chunk.setChunkIndex(0);
         chunk.setContent("Noi dung duoc chia nho.");
@@ -90,14 +86,12 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
     @Test
     void savesConversationAndMessage() {
         Conversation conversation = new Conversation();
-        conversation.setId(UUID.randomUUID());
         conversation.setSessionId("session-001");
         conversation.setTitle("Hoi dap Chuong 1");
 
         Conversation savedConversation = conversationRepository.saveAndFlush(conversation);
 
         Message message = new Message();
-        message.setId(UUID.randomUUID());
         message.setConversation(savedConversation);
         message.setSequenceNo(1);
         message.setRole(MessageRole.USER);
@@ -139,7 +133,6 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
     void savesCitation() {
         // 1. Tạo Document mẫu
         Document document = new Document();
-        document.setId(UUID.randomUUID());
         document.setTitle("Tai lieu RAG");
         document.setSourceFileName("rag.pdf");
         document.setContentType("application/pdf");
@@ -150,7 +143,6 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
 
         // 2. Tạo Chunk mẫu
         Chunk chunk = new Chunk();
-        chunk.setId(UUID.randomUUID());
         chunk.setDocument(savedDoc);
         chunk.setChunkIndex(1);
         chunk.setContent("Doan van ban mau dung de trich dan.");
@@ -162,13 +154,11 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
 
         // 3. Tạo Conversation mẫu
         Conversation conversation = new Conversation();
-        conversation.setId(UUID.randomUUID());
         conversation.setSessionId("session-999");
         Conversation savedConv = conversationRepository.saveAndFlush(conversation);
 
         // 4. Tạo Message mẫu
         Message message = new Message();
-        message.setId(UUID.randomUUID());
         message.setConversation(savedConv);
         message.setSequenceNo(1);
         message.setRole(MessageRole.ASSISTANT);
@@ -177,7 +167,6 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
 
         // 5. Tạo và Lưu Citation để test mapping liên kết n-n theo ERD
         Citation citation = new Citation();
-        citation.setId(UUID.randomUUID());
         citation.setMessage(savedMessage);
         citation.setChunk(savedChunk);
         citation.setChunkId(savedChunk.getId()); // Trường thông tin phụ uuid chunk_id

@@ -39,12 +39,24 @@ class SendMessageUseCaseTest {
         ObjectMapper objectMapper = new ObjectMapper();
 
         Conversation conversation = new Conversation();
-        conversation.setId(UUID.randomUUID());
         conversation.setSessionId("session-1");
         when(conversationRepository.findBySessionId("session-1")).thenReturn(Optional.empty());
-        when(conversationRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(conversationRepository.saveAndFlush(any())).thenAnswer(invocation -> {
+            Conversation saved = invocation.getArgument(0);
+            if (saved.getId() == null) {
+                saved.setId(UUID.randomUUID());
+            }
+            return saved;
+        });
         when(messageRepository.countByConversationId(any())).thenReturn(0L);
-        when(messageRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(messageRepository.saveAndFlush(any())).thenAnswer(invocation -> {
+            Message saved = invocation.getArgument(0);
+            if (saved.getId() == null) {
+                saved.setId(UUID.randomUUID());
+            }
+            return saved;
+        });
 
         Message previousAssistant = new Message();
         previousAssistant.setId(UUID.randomUUID());

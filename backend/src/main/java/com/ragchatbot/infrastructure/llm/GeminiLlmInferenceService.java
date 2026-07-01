@@ -47,31 +47,22 @@ public class GeminiLlmInferenceService implements LlmInferenceService {
                 .collect(Collectors.joining(System.lineSeparator()));
 
         String contextSection = retrievedContexts.stream()
-                .map(context -> """
-                        [%s | %s | score=%s]
-                        %s
-                        """.formatted(
+                .map(context -> "[%s | %s | score=%s]%n%s".formatted(
                         context.documentId(),
                         context.chunkId(),
                         context.score(),
-                        context.content()))
+                        context.content()
+                ))
                 .collect(Collectors.joining(System.lineSeparator() + System.lineSeparator()));
 
-        return """
-                You are a course-material assistant for Vietnamese university students.
-                Answer only from the provided retrieved contexts.
-                If the answer is not grounded in the contexts, say that the documents do not provide enough information.
-                Keep the answer concise and study-oriented.
-
-                Conversation history:
-                %s
-
-                Retrieved contexts:
-                %s
-
-                User question:
-                %s
-                """.formatted(
+        return String.format(
+                "You are a course-material assistant for Vietnamese university students.%n"
+                        + "Answer only from the provided retrieved contexts.%n"
+                        + "If the answer is not grounded in the contexts, say that the documents do not provide enough information.%n"
+                        + "Keep the answer concise and study-oriented.%n%n"
+                        + "Conversation history:%n%s%n%n"
+                        + "Retrieved contexts:%n%s%n%n"
+                        + "User question:%n%s",
                 historySection.isBlank() ? "(no prior conversation)" : historySection,
                 contextSection.isBlank() ? "(no retrieved context)" : contextSection,
                 question

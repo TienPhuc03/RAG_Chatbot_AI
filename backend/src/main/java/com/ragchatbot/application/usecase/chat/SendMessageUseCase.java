@@ -138,7 +138,6 @@ public class SendMessageUseCase {
 
     private Conversation createConversation(String sessionId, String firstQuestion) {
         Conversation conversation = new Conversation();
-        conversation.setId(UUID.randomUUID());
         conversation.setSessionId(sessionId);
         conversation.setTitle(deriveTitle(firstQuestion));
         return conversationRepository.saveAndFlush(conversation);
@@ -152,7 +151,6 @@ public class SendMessageUseCase {
             String citationPayload
     ) {
         Message message = new Message();
-        message.setId(UUID.randomUUID());
         message.setConversation(conversation);
         message.setSequenceNo(Math.toIntExact(sequenceNo));
         message.setRole(role);
