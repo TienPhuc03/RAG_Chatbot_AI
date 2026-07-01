@@ -18,6 +18,18 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  ollama:
+      image: ollama/ollama:latest
+      container_name: ollama
+      ports:
+         - "11434:11434"
+      volumes:
+      - ollama-data:/root/.ollama
+      - ./uth_lora_adapter:/models/uth_lora_adapter
+      - ./ollama-model:/models/ollama-model
+      environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      restart: unless-stopped
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -97,11 +109,15 @@ services:
       GEMINI_TIMEOUT: ${GEMINI_TIMEOUT:-30s}
       GEMINI_MAX_RETRIES: ${GEMINI_MAX_RETRIES:-3}
       RAGAS_SERVICE_URL: http://ragas-service:8002
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: hoc-phan-chatbot
     depends_on:
       postgres:
         condition: service_healthy
       qdrant:
         condition: service_healthy
+      ollama:
+        condition: service_started
     healthcheck:
       test:
         [
@@ -115,3 +131,4 @@ services:
 volumes:
   postgres_data:
   qdrant_data:
+  ollama-data:

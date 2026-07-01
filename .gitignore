@@ -12,3 +12,14 @@ notes/test-files/
 *.env
 backend/hs_err_pid*.log 
 replay_pid*.log
+
+
+# LoRA adapter generated weights/checkpoints
+uth_lora_adapter/adapter_model.safetensors
+uth_lora_adapter/optimizer.pt
+uth_lora_adapter/scheduler.pt
+uth_lora_adapter/rng_state.pth
+uth_lora_adapter/trainer_state.json
+uth_lora_adapter/training_args.bin
+# Ollama generated model files
+ollama-model/*.gguf
