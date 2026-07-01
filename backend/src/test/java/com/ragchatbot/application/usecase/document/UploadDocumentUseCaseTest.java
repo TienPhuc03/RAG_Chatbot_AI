@@ -1,21 +1,23 @@
 package com.ragchatbot.application.usecase.document;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.springframework.mock.web.MockMultipartFile;
 
 import com.ragchatbot.application.dto.document.DocumentUploadResponse;
+import com.ragchatbot.domain.enums.ChunkingStrategy;
 import com.ragchatbot.domain.enums.DocumentStatus;
 import com.ragchatbot.domain.model.Document;
 import com.ragchatbot.infrastructure.persistence.DocumentRepository;
-import java.nio.charset.StandardCharsets;
-import java.util.Optional;
-import java.util.UUID;
-import org.junit.jupiter.api.Test;
-import org.springframework.mock.web.MockMultipartFile;
 
 class UploadDocumentUseCaseTest {
 
@@ -39,7 +41,8 @@ class UploadDocumentUseCaseTest {
                 "JAVA101",
                 "Java Basics",
                 "CH1",
-                "Intro"
+                "Intro",
+                ChunkingStrategy.SEMANTIC
         );
 
         assertThat(response.status()).isEqualTo(DocumentStatus.PENDING);
@@ -72,7 +75,8 @@ class UploadDocumentUseCaseTest {
                 "JAVA101",
                 "Java Basics",
                 "",
-                ""
+                "",
+                 ChunkingStrategy.SEMANTIC
         );
 
         assertThat(response.id()).isEqualTo(existing.getId());

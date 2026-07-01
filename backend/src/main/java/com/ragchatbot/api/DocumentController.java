@@ -1,17 +1,8 @@
 package com.ragchatbot.api;
 
-import com.ragchatbot.application.dto.document.DocumentStatusResponse;
-import com.ragchatbot.application.dto.document.DocumentUploadResponse;
-import com.ragchatbot.application.usecase.document.GetDocumentStatusUseCase;
-import com.ragchatbot.application.usecase.document.GetDocumentsUseCase;
-import com.ragchatbot.application.usecase.document.UploadDocumentUseCase;
-import com.ragchatbot.domain.model.Document;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.util.List;
 import java.util.UUID;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +12,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.ragchatbot.application.dto.document.DocumentStatusResponse;
+import com.ragchatbot.application.dto.document.DocumentUploadResponse;
+import com.ragchatbot.application.usecase.document.GetDocumentStatusUseCase;
+import com.ragchatbot.application.usecase.document.GetDocumentsUseCase;
+import com.ragchatbot.application.usecase.document.UploadDocumentUseCase;
+import com.ragchatbot.domain.enums.ChunkingStrategy;
+import com.ragchatbot.domain.model.Document;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 
 @RestController
 @RequestMapping("/api/documents")
@@ -56,14 +61,16 @@ public class DocumentController {
             @RequestParam String courseCode,
             @RequestParam String courseName,
             @RequestParam(required = false, defaultValue = "") String chapterCode,
-            @RequestParam(required = false, defaultValue = "") String chapterTitle
+            @RequestParam(required = false, defaultValue = "") String chapterTitle,
+            @RequestParam(required = false, defaultValue = "SEMANTIC") ChunkingStrategy chunkingStrategy
     ) {
         DocumentUploadResponse response = uploadDocumentUseCase.execute(
                 file,
                 courseCode,
                 courseName,
                 chapterCode,
-                chapterTitle
+                chapterTitle,
+                chunkingStrategy
         );
         return ResponseEntity.accepted().body(response);
     }
