@@ -1,5 +1,16 @@
 package com.ragchatbot.application.usecase.document;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
 import com.ragchatbot.domain.enums.ChunkingStrategy;
 import com.ragchatbot.domain.enums.DocumentStatus;
 import com.ragchatbot.domain.enums.EmbeddingModel;
@@ -14,21 +25,13 @@ import com.ragchatbot.domain.port.VectorStoreService;
 import com.ragchatbot.infrastructure.chunking.ChunkingServiceFactory;
 import com.ragchatbot.infrastructure.persistence.ChunkRepository;
 import com.ragchatbot.infrastructure.persistence.DocumentRepository;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
 
 @Service
 public class DocumentIndexingWorker {
 
     private static final Logger log = LoggerFactory.getLogger(DocumentIndexingWorker.class);
     private static final ChunkingOptions DEFAULT_OPTIONS = new ChunkingOptions(512, 50);
+    private static final ChunkingStrategy DEFAULT_STRATEGY = ChunkingStrategy.SEMANTIC;
 
     private final DocumentRepository documentRepository;
     private final ChunkRepository chunkRepository;
@@ -78,10 +81,15 @@ public class DocumentIndexingWorker {
             document.setChapterTitle(job.chapterTitle());
             documentRepository.saveAndFlush(document);
 
+            // SAU (đọc động từ job):
+            ChunkingStrategy chunkingStrategy = resolveChunkingStrategy(job);
+            log.info("Indexing document {} with chunking strategy {}", job.documentId(), chunkingStrategy);
+
             List<ChunkDraft> drafts = chunkingServiceFactory.chunk(
-                    parsedDocument.rawText(),
-                    ChunkingStrategy.SEMANTIC,
-                    DEFAULT_OPTIONS
+                parsedDocument.rawText(),
+                chunkingStrategy,
+                DEFAULT_OPTIONS
+
             );
             if (drafts.isEmpty()) {
                 throw new IllegalStateException("No chunks generated for document: " + job.documentId());
@@ -107,7 +115,7 @@ public class DocumentIndexingWorker {
                 chunk.setContent(draft.content());
                 chunk.setPageNumber(draft.pageNumber());
                 chunk.setTokenCount(draft.tokenCount());
-                chunk.setChunkingStrategy(ChunkingStrategy.SEMANTIC);
+                chunk.setChunkingStrategy(chunkingStrategy);
                 chunk.setEmbeddingModel(embeddingModel);
                 chunk.setVectorPointId(chunkId.toString());
                 chunks.add(chunk);
@@ -122,6 +130,18 @@ public class DocumentIndexingWorker {
             log.error("Failed to index document {}", job.documentId(), ex);
             handleFailure(job.documentId(), vectorsUpserted);
         }
+    }
+
+    private ChunkingStrategy resolveChunkingStrategy(DocumentUploadJob job) {
+        if (job.chunkingStrategy() == null) {
+            log.warn(
+                    "Document {} has no chunkingStrategy in job payload, falling back to default {}",
+                    job.documentId(),
+                    DEFAULT_STRATEGY
+        );
+            return DEFAULT_STRATEGY;
+        }
+        return job.chunkingStrategy();
     }
 
     private void handleFailure(UUID documentId, boolean vectorsUpserted) {
