@@ -1,8 +1,20 @@
 package com.ragchatbot.api;
 
+import com.ragchatbot.application.dto.document.DocumentChunkPreviewResponse;
+import com.ragchatbot.application.dto.document.DocumentListResponse;
+import com.ragchatbot.application.dto.document.DocumentStatusResponse;
+import com.ragchatbot.application.dto.document.DocumentUploadResponse;
+import com.ragchatbot.application.usecase.document.GetDocumentChunksUseCase;
+import com.ragchatbot.application.usecase.document.GetDocumentStatusUseCase;
+import com.ragchatbot.application.usecase.document.GetDocumentsUseCase;
+import com.ragchatbot.application.usecase.document.UploadDocumentUseCase;
+import com.ragchatbot.domain.enums.ChunkingStrategy;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.util.List;
 import java.util.UUID;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,20 +25,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.ragchatbot.application.dto.document.DocumentStatusResponse;
-import com.ragchatbot.application.dto.document.DocumentUploadResponse;
-import com.ragchatbot.application.usecase.document.GetDocumentStatusUseCase;
-import com.ragchatbot.application.usecase.document.GetDocumentsUseCase;
-import com.ragchatbot.application.usecase.document.UploadDocumentUseCase;
-import com.ragchatbot.domain.enums.ChunkingStrategy;
-import com.ragchatbot.domain.model.Document;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-
-
 @RestController
 @RequestMapping("/api/documents")
 public class DocumentController {
@@ -34,30 +32,29 @@ public class DocumentController {
     private final UploadDocumentUseCase uploadDocumentUseCase;
     private final GetDocumentsUseCase getDocumentsUseCase;
     private final GetDocumentStatusUseCase getDocumentStatusUseCase;
+    private final GetDocumentChunksUseCase getDocumentChunksUseCase;
 
     public DocumentController(
             UploadDocumentUseCase uploadDocumentUseCase,
             GetDocumentsUseCase getDocumentsUseCase,
-            GetDocumentStatusUseCase getDocumentStatusUseCase
+            GetDocumentStatusUseCase getDocumentStatusUseCase,
+            GetDocumentChunksUseCase getDocumentChunksUseCase
     ) {
         this.uploadDocumentUseCase = uploadDocumentUseCase;
         this.getDocumentsUseCase = getDocumentsUseCase;
         this.getDocumentStatusUseCase = getDocumentStatusUseCase;
+        this.getDocumentChunksUseCase = getDocumentChunksUseCase;
     }
 
-    @Operation(
-            summary = "Upload document",
-            description = "Upload tài liệu để hệ thống RAG thực hiện parsing và indexing."
-    )
+    @Operation(summary = "Upload document")
     @ApiResponses({
             @ApiResponse(responseCode = "202", description = "Upload accepted"),
             @ApiResponse(responseCode = "400", description = "Invalid file")
     })
     @PostMapping("/upload")
     public ResponseEntity<DocumentUploadResponse> uploadDocument(
-            @Parameter(description = "File PDF, DOCX hoặc PPTX cần upload")
-            @RequestParam("file")
-            MultipartFile file,
+            @Parameter(description = "File PDF, DOCX hoac PPTX can upload")
+            @RequestParam("file") MultipartFile file,
             @RequestParam String courseCode,
             @RequestParam String courseName,
             @RequestParam(required = false, defaultValue = "") String chapterCode,
@@ -75,37 +72,23 @@ public class DocumentController {
         return ResponseEntity.accepted().body(response);
     }
 
-    @Operation(
-            summary = "Get documents",
-            description = "Lấy danh sách tài liệu theo courseCode."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Get documents successfully")
-    })
     @GetMapping
-    public ResponseEntity<List<Document>> getDocuments(
-            @Parameter(description = "Mã môn học", example = "JAVA101")
-            @RequestParam(required = false)
-            String courseCode
+    public ResponseEntity<List<DocumentListResponse>> getDocuments(
+            @RequestParam(required = false) String courseCode
     ) {
-        List<Document> documents = getDocumentsUseCase.execute(courseCode);
-        return ResponseEntity.ok(documents);
+        return ResponseEntity.ok(getDocumentsUseCase.execute(courseCode));
     }
 
     @GetMapping("/{id}/status")
     public ResponseEntity<DocumentStatusResponse> getDocumentStatus(@PathVariable UUID id) {
-        DocumentStatusResponse response = getDocumentStatusUseCase.execute(id);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(getDocumentStatusUseCase.execute(id));
     }
 
-    @Operation(
-            summary = "Delete document",
-            description = "Xóa tài liệu khỏi hệ thống dựa vào ID."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Document not found")
-    })
+    @GetMapping("/{id}/chunks")
+    public ResponseEntity<List<DocumentChunkPreviewResponse>> getDocumentChunks(@PathVariable UUID id) {
+        return ResponseEntity.ok(getDocumentChunksUseCase.execute(id));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDocument(@PathVariable UUID id) {
         return ResponseEntity.noContent().build();

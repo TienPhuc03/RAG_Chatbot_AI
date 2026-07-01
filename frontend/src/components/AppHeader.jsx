@@ -3,6 +3,8 @@ import { useLocation } from "react-router-dom";
 
 const PAGE_TITLES = {
   "/chat": "Assistant",
+  "/documents": "Documents",
+  "/benchmark": "Benchmark",
   "/templates": "Templates",
   "/settings": "Settings",
 };

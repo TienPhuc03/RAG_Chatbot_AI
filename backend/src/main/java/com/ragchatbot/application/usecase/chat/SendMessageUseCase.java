@@ -3,6 +3,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ragchatbot.application.dto.chat.ChatRequest;
 import com.ragchatbot.application.dto.chat.ChatResponse;
+import com.ragchatbot.application.usecase.document.DocumentMaintenanceService;
 import com.ragchatbot.domain.enums.MessageRole;
 import com.ragchatbot.domain.model.Conversation;
 import com.ragchatbot.domain.model.Message;
@@ -13,6 +14,7 @@ import com.ragchatbot.domain.port.LlmInferenceService;
 import com.ragchatbot.domain.port.RetrievedContext;
 import com.ragchatbot.domain.port.VectorStoreService;
 import com.ragchatbot.infrastructure.persistence.ConversationRepository;
+import com.ragchatbot.infrastructure.persistence.DocumentRepository;
 import com.ragchatbot.infrastructure.persistence.MessageRepository;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -31,6 +33,8 @@ public class SendMessageUseCase {
 
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
+    private final DocumentRepository documentRepository;
+    private final DocumentMaintenanceService documentMaintenanceService;
     private final EmbeddingService embeddingService;
     private final VectorStoreService vectorStoreService;
     private final LlmInferenceService llmInferenceService;
@@ -39,6 +43,8 @@ public class SendMessageUseCase {
     public SendMessageUseCase(
             ConversationRepository conversationRepository,
             MessageRepository messageRepository,
+            DocumentRepository documentRepository,
+            DocumentMaintenanceService documentMaintenanceService,
             EmbeddingService embeddingService,
             VectorStoreService vectorStoreService,
             LlmInferenceService llmInferenceService,
@@ -46,6 +52,8 @@ public class SendMessageUseCase {
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
+        this.documentRepository = documentRepository;
+        this.documentMaintenanceService = documentMaintenanceService;
         this.embeddingService = embeddingService;
         this.vectorStoreService = vectorStoreService;
         this.llmInferenceService = llmInferenceService;
@@ -58,6 +66,7 @@ public class SendMessageUseCase {
         }
 
         Conversation conversation = resolveConversation(request);
+        documentMaintenanceService.reconcileStaleProcessingDocuments();
 
         if (!StringUtils.hasText(conversation.getTitle())) {
             conversation.setTitle(deriveTitle(request.question()));
@@ -89,13 +98,24 @@ public class SendMessageUseCase {
                 null
         );
 
+        String courseCode = blankToNull(request.courseCode());
+        String chapterCode = blankToNull(request.chapterCode());
+        if (!hasIndexedDocuments(courseCode, chapterCode)) {
+            return buildUnavailableDocumentResponse(
+                    conversation,
+                    assistantSequenceNo,
+                    courseCode,
+                    chapterCode
+            );
+        }
+
         List<Float> questionEmbedding = embeddingService.embed(request.question());
 
         List<RetrievedContext> retrievedContexts = vectorStoreService.search(
                 questionEmbedding,
                 5,
-                blankToNull(request.courseCode()),
-                blankToNull(request.chapterCode())
+                courseCode,
+                chapterCode
         );
 
         LlmAnswer answer = llmInferenceService.generateAnswer(
@@ -125,6 +145,57 @@ public class SendMessageUseCase {
         );
     }
 
+    private boolean hasIndexedDocuments(String courseCode, String chapterCode) {
+        if (courseCode == null) {
+            return documentRepository.countByStatus(com.ragchatbot.domain.enums.DocumentStatus.INDEXED) > 0;
+        }
+        if (chapterCode == null) {
+            return documentRepository.countByStatusAndCourseCode(
+                    com.ragchatbot.domain.enums.DocumentStatus.INDEXED,
+                    courseCode
+            ) > 0;
+        }
+        return documentRepository.countByStatusAndCourseCodeAndChapterCode(
+                com.ragchatbot.domain.enums.DocumentStatus.INDEXED,
+                courseCode,
+                chapterCode
+        ) > 0;
+    }
+
+    private ChatResponse buildUnavailableDocumentResponse(
+            Conversation conversation,
+            int assistantSequenceNo,
+            String courseCode,
+            String chapterCode
+    ) {
+        String answer = buildUnavailableDocumentMessage(courseCode, chapterCode);
+        saveMessage(conversation, assistantSequenceNo, MessageRole.ASSISTANT, answer, "[]");
+        conversation.setUpdatedAt(Instant.now());
+        conversationRepository.saveAndFlush(conversation);
+        return new ChatResponse(
+                conversation.getId().toString(),
+                conversation.getSessionId(),
+                answer,
+                false
+        );
+    }
+
+    private String buildUnavailableDocumentMessage(String courseCode, String chapterCode) {
+        if (courseCode != null && chapterCode != null) {
+            return "Chua co tai lieu nao o trang thai INDEXED cho courseCode "
+                    + courseCode
+                    + " va chapterCode "
+                    + chapterCode
+                    + ". Hay upload file DOCX hoac PDF co the copy text, roi doi index xong.";
+        }
+        if (courseCode != null) {
+            return "Chua co tai lieu nao o trang thai INDEXED cho courseCode "
+                    + courseCode
+                    + ". Hay upload file DOCX hoac PDF co the copy text, roi doi index xong.";
+        }
+        return "He thong chua co tai lieu nao o trang thai INDEXED. Hay upload file DOCX hoac PDF co the copy text truoc khi chat.";
+    }
+
     private Conversation resolveConversation(ChatRequest request) {
         String sessionId = request.sessionId();
 
@@ -138,7 +209,6 @@ public class SendMessageUseCase {
 
     private Conversation createConversation(String sessionId, String firstQuestion) {
         Conversation conversation = new Conversation();
-        conversation.setId(UUID.randomUUID());
         conversation.setSessionId(sessionId);
         conversation.setTitle(deriveTitle(firstQuestion));
         return conversationRepository.saveAndFlush(conversation);
@@ -152,7 +222,6 @@ public class SendMessageUseCase {
             String citationPayload
     ) {
         Message message = new Message();
-        message.setId(UUID.randomUUID());
         message.setConversation(conversation);
         message.setSequenceNo(Math.toIntExact(sequenceNo));
         message.setRole(role);

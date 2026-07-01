@@ -90,14 +90,12 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
     @Test
     void savesConversationAndMessage() {
         Conversation conversation = new Conversation();
-        conversation.setId(UUID.randomUUID());
         conversation.setSessionId("session-001");
         conversation.setTitle("Hoi dap Chuong 1");
 
         Conversation savedConversation = conversationRepository.saveAndFlush(conversation);
 
         Message message = new Message();
-        message.setId(UUID.randomUUID());
         message.setConversation(savedConversation);
         message.setSequenceNo(1);
         message.setRole(MessageRole.USER);
@@ -162,13 +160,11 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
 
         // 3. Tạo Conversation mẫu
         Conversation conversation = new Conversation();
-        conversation.setId(UUID.randomUUID());
         conversation.setSessionId("session-999");
         Conversation savedConv = conversationRepository.saveAndFlush(conversation);
 
         // 4. Tạo Message mẫu
         Message message = new Message();
-        message.setId(UUID.randomUUID());
         message.setConversation(savedConv);
         message.setSequenceNo(1);
         message.setRole(MessageRole.ASSISTANT);

@@ -42,7 +42,7 @@ class QdrantPropertiesTest {
                 .run(context -> {
                     QdrantProperties properties = context.getBean(QdrantProperties.class);
                     assertThat(properties.getQdrantHost()).isEqualTo("localhost");
-                    assertThat(properties.getQdrantPort()).isEqualTo(6333);
+                    assertThat(properties.getQdrantPort()).isEqualTo(6334);
                     assertThat(properties.getCollectionName()).isEqualTo("rag_chunks");
                     assertThat(properties.getVectorSize()).isEqualTo(3072);
                     assertThat(properties.isUseTls()).isFalse();

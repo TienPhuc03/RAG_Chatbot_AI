@@ -64,6 +64,7 @@ public class DocumentIndexingWorker {
                     .orElseThrow(() -> new IllegalStateException("Document not found: " + job.documentId()));
 
             document.setStatus(DocumentStatus.PROCESSING);
+            document.setFailureReason(null);
             documentRepository.saveAndFlush(document);
 
             ParsedDocument parsedDocument = documentParserService.parse(
@@ -125,10 +126,11 @@ public class DocumentIndexingWorker {
 
             document.setIndexedAt(Instant.now());
             document.setStatus(DocumentStatus.INDEXED);
+            document.setFailureReason(null);
             documentRepository.saveAndFlush(document);
         } catch (Exception ex) {
             log.error("Failed to index document {}", job.documentId(), ex);
-            handleFailure(job.documentId(), vectorsUpserted);
+            handleFailure(job.documentId(), ex.getMessage(), vectorsUpserted);
         }
     }
 
@@ -144,10 +146,11 @@ public class DocumentIndexingWorker {
         return job.chunkingStrategy();
     }
 
-    private void handleFailure(UUID documentId, boolean vectorsUpserted) {
+    private void handleFailure(UUID documentId, String failureReason, boolean vectorsUpserted) {
         try {
             documentRepository.findById(documentId).ifPresent(document -> {
                 document.setStatus(DocumentStatus.FAILED);
+                document.setFailureReason(failureReason);
                 documentRepository.saveAndFlush(document);
             });
         } catch (Exception ex) {

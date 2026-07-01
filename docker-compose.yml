@@ -19,17 +19,17 @@ services:
       timeout: 5s
       retries: 5
   ollama:
-      image: ollama/ollama:latest
-      container_name: ollama
-      ports:
-         - "11434:11434"
-      volumes:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
       - ollama-data:/root/.ollama
       - ./uth_lora_adapter:/models/uth_lora_adapter
       - ./ollama-model:/models/ollama-model
-      environment:
+    environment:
       - OLLAMA_HOST=0.0.0.0:11434
-      restart: unless-stopped
+    restart: unless-stopped
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -102,7 +102,8 @@ services:
       SPRING_DATASOURCE_USERNAME: raguser
       SPRING_DATASOURCE_PASSWORD: ragpass
       QDRANT_HOST: qdrant
-      QDRANT_PORT: 6333
+      QDRANT_PORT: 6334
+      RAG_LLM_PROVIDER: ${RAG_LLM_PROVIDER:-GEMINI}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
       GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-001}

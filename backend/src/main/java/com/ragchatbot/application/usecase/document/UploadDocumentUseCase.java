@@ -60,10 +60,6 @@ public class UploadDocumentUseCase {
         }
 
         String checksum = sha256Hex(content);
-        Document existing = documentRepository.findByChecksum(checksum).orElse(null);
-        if (existing != null) {
-            return toResponse(existing);
-        }
 
         Document document = new Document();
         document.setId(UUID.randomUUID());

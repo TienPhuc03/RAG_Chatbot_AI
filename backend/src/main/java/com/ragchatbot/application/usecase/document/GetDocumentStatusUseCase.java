@@ -11,17 +11,23 @@ import org.springframework.stereotype.Service;
 public class GetDocumentStatusUseCase {
 
     private final DocumentRepository documentRepository;
+    private final DocumentMaintenanceService documentMaintenanceService;
 
-    public GetDocumentStatusUseCase(DocumentRepository documentRepository) {
+    public GetDocumentStatusUseCase(
+            DocumentRepository documentRepository,
+            DocumentMaintenanceService documentMaintenanceService
+    ) {
         this.documentRepository = documentRepository;
+        this.documentMaintenanceService = documentMaintenanceService;
     }
 
     public DocumentStatusResponse execute(UUID id) {
+        documentMaintenanceService.reconcileStaleProcessingDocuments();
         Document doc = documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Document not found: " + id));
 
         DocumentStatus status = doc.getStatus() == null ? DocumentStatus.PENDING : doc.getStatus();
 
-        return new DocumentStatusResponse(doc.getId(), status, doc.getIndexedAt());
+        return new DocumentStatusResponse(doc.getId(), status, doc.getIndexedAt(), doc.getFailureReason());
     }
 }

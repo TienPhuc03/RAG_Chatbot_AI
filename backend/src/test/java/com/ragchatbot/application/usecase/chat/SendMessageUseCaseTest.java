@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ragchatbot.application.dto.chat.ChatRequest;
 import com.ragchatbot.application.dto.chat.ChatResponse;
+import com.ragchatbot.application.usecase.document.DocumentMaintenanceService;
+import com.ragchatbot.domain.enums.DocumentStatus;
 import com.ragchatbot.domain.enums.MessageRole;
 import com.ragchatbot.domain.model.Conversation;
 import com.ragchatbot.domain.model.Message;
@@ -20,6 +22,7 @@ import com.ragchatbot.domain.port.LlmInferenceService;
 import com.ragchatbot.domain.port.RetrievedContext;
 import com.ragchatbot.domain.port.VectorStoreService;
 import com.ragchatbot.infrastructure.persistence.ConversationRepository;
+import com.ragchatbot.infrastructure.persistence.DocumentRepository;
 import com.ragchatbot.infrastructure.persistence.MessageRepository;
 import java.util.List;
 import java.util.Optional;
@@ -33,18 +36,29 @@ class SendMessageUseCaseTest {
     void executeCreatesConversationSearchesKnowledgeAndStoresCitationPayload() {
         ConversationRepository conversationRepository = mock(ConversationRepository.class);
         MessageRepository messageRepository = mock(MessageRepository.class);
+        DocumentRepository documentRepository = mock(DocumentRepository.class);
+        DocumentMaintenanceService documentMaintenanceService = mock(DocumentMaintenanceService.class);
         EmbeddingService embeddingService = mock(EmbeddingService.class);
         VectorStoreService vectorStoreService = mock(VectorStoreService.class);
         LlmInferenceService llmInferenceService = mock(LlmInferenceService.class);
         ObjectMapper objectMapper = new ObjectMapper();
 
-        Conversation conversation = new Conversation();
-        conversation.setId(UUID.randomUUID());
-        conversation.setSessionId("session-1");
         when(conversationRepository.findBySessionId("session-1")).thenReturn(Optional.empty());
-        when(conversationRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(conversationRepository.saveAndFlush(any())).thenAnswer(invocation -> {
+            Conversation savedConversation = invocation.getArgument(0);
+            if (savedConversation.getId() == null) {
+                savedConversation.setId(UUID.randomUUID());
+            }
+            return savedConversation;
+        });
         when(messageRepository.countByConversationId(any())).thenReturn(0L);
-        when(messageRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(messageRepository.saveAndFlush(any())).thenAnswer(invocation -> {
+            Message savedMessage = invocation.getArgument(0);
+            if (savedMessage.getId() == null) {
+                savedMessage.setId(UUID.randomUUID());
+            }
+            return savedMessage;
+        });
 
         Message previousAssistant = new Message();
         previousAssistant.setId(UUID.randomUUID());
@@ -61,6 +75,11 @@ class SendMessageUseCaseTest {
 
         when(embeddingService.embed("Can nang Java la gi?"))
                 .thenReturn(List.of(0.1f, 0.2f, 0.3f));
+        when(documentRepository.countByStatusAndCourseCodeAndChapterCode(
+                DocumentStatus.INDEXED,
+                "JAVA101",
+                "CH1"
+        )).thenReturn(1L);
 
         RetrievedContext context = new RetrievedContext(
                 UUID.randomUUID(),
@@ -90,6 +109,8 @@ class SendMessageUseCaseTest {
         SendMessageUseCase useCase = new SendMessageUseCase(
                 conversationRepository,
                 messageRepository,
+                documentRepository,
+                documentMaintenanceService,
                 embeddingService,
                 vectorStoreService,
                 llmInferenceService,

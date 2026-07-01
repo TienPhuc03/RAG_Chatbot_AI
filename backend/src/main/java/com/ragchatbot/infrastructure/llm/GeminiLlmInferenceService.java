@@ -9,9 +9,11 @@ import com.ragchatbot.infrastructure.gemini.GeminiApiClient;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
+@ConditionalOnProperty(prefix = "rag.llm", name = "provider", havingValue = "GEMINI", matchIfMissing = true)
 public class GeminiLlmInferenceService implements LlmInferenceService {
 
     private final GeminiProperties geminiProperties;

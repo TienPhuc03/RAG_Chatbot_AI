@@ -21,6 +21,8 @@ function ChatPage() {
   const navigate = useNavigate();
   const { refreshConversations } = useConversations();
   const [composerValue, setComposerValue] = useState("");
+  const [courseCode, setCourseCode] = useState("");
+  const [chapterCode, setChapterCode] = useState("");
   const [messages, setMessages] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [sendLoading, setSendLoading] = useState(false);
@@ -47,15 +49,13 @@ function ChatPage() {
 
       try {
         const response = await fetchChatHistory(sessionId);
-        if (!active) {
-          return;
+        if (active) {
+          setMessages(response.map(toUiMessage));
         }
-        setMessages(response.map(toUiMessage));
       } catch (loadError) {
-        if (!active) {
-          return;
+        if (active) {
+          setError(loadError.message || "Unable to load this conversation.");
         }
-        setError(loadError.message || "Unable to load this conversation.");
       } finally {
         if (active) {
           setHistoryLoading(false);
@@ -96,8 +96,8 @@ function ChatPage() {
       const response = await sendMessage({
         sessionId: sessionId || null,
         question: trimmedPrompt,
-        courseCode: "",
-        chapterCode: "",
+        courseCode: courseCode.trim(),
+        chapterCode: chapterCode.trim(),
       });
 
       const assistantMessage = {
@@ -124,6 +124,29 @@ function ChatPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      <div className="mx-auto w-full max-w-4xl px-4 pt-6 sm:px-6 lg:px-8">
+        <div className="grid gap-4 rounded-[1.75rem] border border-border-subtle bg-white p-5 shadow-soft sm:grid-cols-2">
+          <label className="text-sm text-text-secondary">
+            Course code
+            <input
+              value={courseCode}
+              onChange={(event) => setCourseCode(event.target.value)}
+              placeholder="VD: DB101"
+              className="mt-2 h-11 w-full rounded-2xl border border-border-subtle px-4 text-text-primary outline-none"
+            />
+          </label>
+          <label className="text-sm text-text-secondary">
+            Chapter code
+            <input
+              value={chapterCode}
+              onChange={(event) => setChapterCode(event.target.value)}
+              placeholder="VD: CH1"
+              className="mt-2 h-11 w-full rounded-2xl border border-border-subtle px-4 text-text-primary outline-none"
+            />
+          </label>
+        </div>
+      </div>
+
       <div className="scrollbar-subtle flex-1 overflow-y-auto">
         {isWelcomeState ? (
           <ChatWelcome
@@ -159,7 +182,7 @@ function ChatPage() {
       </div>
 
       <div className="px-4 text-center text-sm text-text-muted sm:px-6 lg:px-8">
-        <p className="pb-2">AI can make mistakes. Verify important information.</p>
+        <p className="pb-2">AI có thể mắc lỗi. Hãy xác minh thông tin quan trọng.</p>
       </div>
 
       <ChatComposer

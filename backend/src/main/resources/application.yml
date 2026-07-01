@@ -10,6 +10,11 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ragchatbot}
     username: ${SPRING_DATASOURCE_USERNAME:raguser}
     password: ${SPRING_DATASOURCE_PASSWORD:ragpass}
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
   jpa:
     open-in-view: false
     hibernate:
@@ -37,11 +42,13 @@ management:
 rag:
   vector-store:
     qdrant-host: ${QDRANT_HOST:localhost}
-    qdrant-port: ${QDRANT_PORT:6333}
+    qdrant-port: ${QDRANT_PORT:6334}
     collection-name: ${QDRANT_COLLECTION_NAME:rag_chunks}
     vector-size: ${QDRANT_VECTOR_SIZE:3072}
     use-tls: ${QDRANT_USE_TLS:false}
     request-timeout: ${QDRANT_REQUEST_TIMEOUT:30s}
+  llm:
+    provider: ${RAG_LLM_PROVIDER:GEMINI}
   evaluation:
     base-url: ${RAGAS_SERVICE_URL:http://localhost:8002}
     evaluate-path: ${RAGAS_EVALUATE_PATH:/evaluate}

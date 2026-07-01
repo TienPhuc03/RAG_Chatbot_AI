@@ -1,9 +1,11 @@
 import {
   ChevronRight,
   CircleHelp,
+  Database,
   History,
   LogOut,
   MessageSquarePlus,
+  Microscope,
   Settings,
   WandSparkles,
 } from "lucide-react";
@@ -33,6 +35,8 @@ function Sidebar({ mobileOpen, onClose }) {
 
   const items = [
     { to: "/chat", label: "New Chat", icon: MessageSquarePlus },
+    { to: "/documents", label: "Documents", icon: Database },
+    { to: "/benchmark", label: "Benchmark", icon: Microscope },
     { to: "/templates", label: "Templates", icon: WandSparkles },
     { to: "/settings", label: "Settings", icon: Settings },
   ];
@@ -54,7 +58,6 @@ function Sidebar({ mobileOpen, onClose }) {
           <LogoMark variant="auth" className="size-12 rounded-xl" />
           <div>
             <div className="text-[2rem] font-bold tracking-[-0.03em] text-text-primary">AI Assistant</div>
-            <div className="text-lg text-text-secondary">Pro Plan</div>
           </div>
         </div>
 
@@ -119,7 +122,7 @@ function Sidebar({ mobileOpen, onClose }) {
           </div>
         </div>
 
-        <div className="mt-6 rounded-[1.75rem] border border-border-subtle bg-surface-soft p-4 shadow-soft">
+        {/* <div className="mt-6 rounded-[1.75rem] border border-border-subtle bg-surface-soft p-4 shadow-soft">
           <div className="text-lg font-semibold text-text-primary">Need more power?</div>
           <p className="mt-2 text-sm leading-6 text-text-secondary">
             Unlock faster answers, more memory, and richer workspace tools.
@@ -130,7 +133,7 @@ function Sidebar({ mobileOpen, onClose }) {
           >
             Upgrade to Plus
           </button>
-        </div>
+        </div> */}
 
         <div className="mt-6 space-y-2 border-t border-border-subtle pt-5">
           <button

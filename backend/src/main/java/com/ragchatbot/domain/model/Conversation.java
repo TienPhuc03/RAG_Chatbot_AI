@@ -3,17 +3,21 @@ package com.ragchatbot.domain.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.Instant;
 
 import org.hibernate.annotations.UuidGenerator;
 import java.util.UUID;
+import org.springframework.data.domain.Persistable;
 
 @Entity
 @Table(name = "conversations")
-public class Conversation {
+public class Conversation implements Persistable<UUID> {
 
     // tự sinh UUID
     @Id
@@ -33,6 +37,9 @@ public class Conversation {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Transient
+    private boolean isNew = true;
+
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();
@@ -43,6 +50,12 @@ public class Conversation {
     @PreUpdate
     void onUpdate() {
         updatedAt = Instant.now();
+    }
+
+    @PostPersist
+    @PostLoad
+    void markNotNew() {
+        isNew = false;
     }
 
     public UUID getId() {
@@ -83,5 +96,10 @@ public class Conversation {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    @Override
+    public boolean isNew() {
+        return isNew;
     }
 }

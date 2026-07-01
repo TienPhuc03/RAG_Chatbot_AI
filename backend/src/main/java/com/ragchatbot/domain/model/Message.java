@@ -19,7 +19,6 @@ import org.hibernate.annotations.UuidGenerator;
 @Table(name = "messages")
 public class Message {
 
-    //tự sinh UUID
     @Id
     @UuidGenerator
     @Column(name = "messages_id", updatable = false, nullable = false)
@@ -94,15 +93,15 @@ public class Message {
         return citationPayload;
     }
 
+    public void setCitationPayload(String citationPayload) {
+        this.citationPayload = citationPayload;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public void setCitationPayload(String citationPayload) {
-        this.citationPayload = citationPayload;
     }
 }

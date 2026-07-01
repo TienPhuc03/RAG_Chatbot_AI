@@ -38,7 +38,7 @@ function ChatComposer({ value, onChange, onSubmit, loading }) {
             value={value}
             onChange={(event) => onChange(event.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask me anything..."
+            placeholder="Hỏi tôi bất cứ điều gì..."
             className="max-h-56 min-h-12 flex-1 resize-none bg-transparent px-2 py-3 text-lg text-text-primary outline-none placeholder:text-text-muted"
           />
           <button
