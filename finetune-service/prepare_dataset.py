@@ -113,22 +113,22 @@ def extract_all_slides(slides_dir: Path) -> list[dict]:
 
 
 def generate_qa_pairs(model, slide_content: str, num_pairs: int = QA_PER_SLIDE) -> list[dict]:
-    prompt = f"""Ban la tro ly tao du lieu huan luyen chatbot hoc phan.
+    prompt = f"""Bạn là trợ lý tạo dữ liệu huấn luyện chatbot học phần.
 
-Duoi day la noi dung cua mot slide bai giang:
+Duới đây là nội dung slide:
 ---
 {slide_content}
 ---
 
-Hay sinh ra dung {num_pairs} cap cau hoi - tra loi dua hoan toan tren noi dung slide.
+Hãy xin ra {num_pairs} cặp câu hỏi - trả lời dựa hoàn toàn trên nội dung slide.
 
-Yeu cau:
-- Viet bang tieng Viet ro rang
-- Cau hoi ngan gon, dung trong tam
-- Cau tra loi dung kien thuc trong slide
-- Khong them kien thuc ben ngoai
+Yêu cầu:
+- Viết bằng tiếng Việt rõ ràng
+- Câu hỏi ngắn gọn, đúng trọng tâm
+- Câu trả lời đúng kiến thức trong slide
+- Không thêm kiến thức bên ngoài
 
-Tra ve JSON thuan tuy dung format:
+Trả về JSON thuần túy đúng format:
 [
   {{"instruction": "Cau hoi 1", "output": "Cau tra loi 1"}},
   {{"instruction": "Cau hoi 2", "output": "Cau tra loi 2"}}

@@ -75,11 +75,8 @@ class SendMessageUseCaseTest {
 
         when(embeddingService.embed("Can nang Java la gi?"))
                 .thenReturn(List.of(0.1f, 0.2f, 0.3f));
-        when(documentRepository.countByStatusAndCourseCodeAndChapterCode(
-                DocumentStatus.INDEXED,
-                "JAVA101",
-                "CH1"
-        )).thenReturn(1L);
+        when(documentMaintenanceService.hasIndexedDocuments("JAVA101", "CH1")).thenReturn(true);
+        when(documentRepository.findByConversationSessionIdOrderByCreatedAtAsc("session-1")).thenReturn(List.of());
 
         RetrievedContext context = new RetrievedContext(
                 UUID.randomUUID(),
@@ -89,7 +86,13 @@ class SendMessageUseCaseTest {
                 "JAVA101",
                 "CH1"
         );
-        when(vectorStoreService.search(eq(List.of(0.1f, 0.2f, 0.3f)), eq(5), eq("JAVA101"), eq("CH1")))
+        when(vectorStoreService.search(
+                eq(List.of(0.1f, 0.2f, 0.3f)),
+                eq(5),
+                eq("JAVA101"),
+                eq("CH1"),
+                eq(null)
+        ))
                 .thenReturn(List.of(context));
 
         when(llmInferenceService.generateAnswer(

@@ -80,6 +80,7 @@ public class DocumentIndexingWorker {
             document.setCourseName(job.courseName());
             document.setChapterCode(job.chapterCode());
             document.setChapterTitle(job.chapterTitle());
+            document.setConversationSessionId(job.conversationSessionId());
             documentRepository.saveAndFlush(document);
 
             // SAU (đọc động từ job):

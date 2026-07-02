@@ -38,7 +38,7 @@ class BenchmarkRunnerServiceTest {
                 new TestCase("Q001", "Cau hoi", "Dap an", "DEFINITION")
         ));
         when(embeddingService.embed("Cau hoi")).thenReturn(List.of(0.1f, 0.2f));
-        when(vectorStoreService.search(any(), anyInt(), any(), any())).thenReturn(List.of(
+        when(vectorStoreService.search(any(), anyInt(), any(), any(), any())).thenReturn(List.of(
                 new RetrievedContext(UUID.randomUUID(), UUID.randomUUID(), "Dap an", 0.9, "DB101", "CH1")
         ));
         when(llmInferenceService.generateAnswer(any(), any(), any())).thenReturn(

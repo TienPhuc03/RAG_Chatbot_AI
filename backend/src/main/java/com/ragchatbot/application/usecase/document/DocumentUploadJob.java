@@ -4,7 +4,7 @@ import java.util.UUID;
 
 import com.ragchatbot.domain.enums.ChunkingStrategy;
 
-record DocumentUploadJob(
+public record DocumentUploadJob(
         UUID documentId,
         byte[] content,
         String originalFileName,
@@ -13,6 +13,7 @@ record DocumentUploadJob(
         String courseName,
         String chapterCode,
         String chapterTitle,
+        String conversationSessionId,
         String checksum,
         ChunkingStrategy chunkingStrategy
 ) {}

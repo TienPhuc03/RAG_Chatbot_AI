@@ -74,7 +74,7 @@ public class BenchmarkRunnerService {
 
                 if (experimentType == ExperimentType.RAG) {
                     List<Float> questionEmbedding = embeddingService.embed(testCase.question());
-                    retrievedContexts = vectorStoreService.search(questionEmbedding, 5, null, null);
+                    retrievedContexts = vectorStoreService.search(questionEmbedding, 5, null, null, null);
                     retrievalHit = computeRetrievalHit(testCase.groundTruth(), retrievedContexts);
                 }
 

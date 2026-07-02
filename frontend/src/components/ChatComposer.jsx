@@ -1,8 +1,35 @@
 import { ArrowUp, LoaderCircle, Mic, Paperclip } from "lucide-react";
 import { useEffect, useRef } from "react";
 
-function ChatComposer({ value, onChange, onSubmit, loading }) {
+function statusLabel(status) {
+  if (status === "INDEXED") {
+    return "San sang";
+  }
+  if (status === "FAILED") {
+    return "That bai";
+  }
+  if (status === "PROCESSING") {
+    return "Dang index";
+  }
+  if (status === "PENDING") {
+    return "Dang tai len";
+  }
+  return status || "";
+}
+
+function ChatComposer({
+  value,
+  onChange,
+  onSubmit,
+  loading,
+  selectedFile,
+  attachments = [],
+  attachmentNotice = "",
+  onPickFile,
+  onRemoveSelectedFile,
+}) {
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -28,17 +55,29 @@ function ChatComposer({ value, onChange, onSubmit, loading }) {
         <div className="flex items-end gap-3">
           <button
             type="button"
+            onClick={() => fileInputRef.current?.click()}
             className="flex size-12 shrink-0 items-center justify-center rounded-2xl text-text-secondary transition hover:bg-surface-muted hover:text-text-primary"
           >
             <Paperclip className="size-5" />
           </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,.ppt,.pptx"
+            onChange={(event) => {
+              const file = event.target.files?.[0] || null;
+              onPickFile(file);
+              event.target.value = "";
+            }}
+            className="hidden"
+          />
           <textarea
             ref={textareaRef}
             rows={1}
             value={value}
             onChange={(event) => onChange(event.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Hỏi tôi bất cứ điều gì..."
+            placeholder="Hoi toi bat cu dieu gi..."
             className="max-h-56 min-h-12 flex-1 resize-none bg-transparent px-2 py-3 text-lg text-text-primary outline-none placeholder:text-text-muted"
           />
           <button
@@ -56,6 +95,46 @@ function ChatComposer({ value, onChange, onSubmit, loading }) {
             {loading ? <LoaderCircle className="size-5 animate-spin" /> : <ArrowUp className="size-5" />}
           </button>
         </div>
+
+        {selectedFile ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-surface-muted px-3 py-2 text-sm text-text-primary">
+              <Paperclip className="size-4 text-teal" />
+              <span className="max-w-60 truncate underline decoration-dotted underline-offset-4">
+                {selectedFile.name}
+              </span>
+              <span className="text-xs text-text-secondary">Sap gui</span>
+              <button
+                type="button"
+                onClick={onRemoveSelectedFile}
+                className="rounded-full px-2 py-1 text-xs text-text-secondary transition hover:bg-white hover:text-text-primary"
+              >
+                Bo
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {attachments.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {attachments.map((attachment) => (
+              <div
+                key={attachment.documentId}
+                className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-white px-3 py-2 text-sm text-text-primary"
+              >
+                <Paperclip className="size-4 text-teal" />
+                <span className="max-w-60 truncate underline decoration-dotted underline-offset-4">
+                  {attachment.fileName}
+                </span>
+                <span className="text-xs text-text-secondary">{statusLabel(attachment.status)}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {attachmentNotice ? (
+          <div className="mt-3 px-1 text-sm text-text-secondary">{attachmentNotice}</div>
+        ) : null}
       </div>
     </div>
   );

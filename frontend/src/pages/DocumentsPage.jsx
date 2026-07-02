@@ -46,6 +46,14 @@ function DocumentsPage() {
       setMessage("Ban chua chon file.");
       return;
     }
+    if (!courseCode.trim()) {
+      setMessage("Ban can nhap course code.");
+      return;
+    }
+    if (!courseName.trim()) {
+      setMessage("Ban can nhap course name.");
+      return;
+    }
 
     setUploading(true);
     setMessage("");
@@ -110,6 +118,7 @@ function DocumentsPage() {
           File
           <input
             type="file"
+            accept=".pdf,.doc,.docx,.ppt,.pptx"
             onChange={(event) => setFile(event.target.files?.[0] || null)}
             className="mt-2 block h-11 w-full rounded-2xl border border-border-subtle px-4 py-2"
           />

@@ -14,10 +14,16 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
 
     List<Document> findByCourseCode(String courseCode);
 
+    List<Document> findAllByConversationSessionIdIsNullOrderByCreatedAtDesc();
+
+    List<Document> findByCourseCodeAndConversationSessionIdIsNullOrderByCreatedAtDesc(String courseCode);
+
     List<Document> findByCourseCodeAndChapterCode(
             String courseCode,
             String chapterCode
     );
+
+    List<Document> findByConversationSessionIdOrderByCreatedAtAsc(String conversationSessionId);
 
     List<Document> findByStatusAndUpdatedAtBefore(DocumentStatus status, Instant updatedAt);
 
@@ -30,4 +36,6 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
             String courseCode,
             String chapterCode
     );
+
+    long countByStatusAndConversationSessionId(DocumentStatus status, String conversationSessionId);
 }

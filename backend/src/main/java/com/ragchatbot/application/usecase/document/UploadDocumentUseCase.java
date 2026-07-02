@@ -84,6 +84,7 @@ public class UploadDocumentUseCase {
                 courseName,
                 blankToNull(chapterCode),
                 blankToNull(chapterTitle),
+                null,
                 checksum,
                 chunkingStrategy
         ));

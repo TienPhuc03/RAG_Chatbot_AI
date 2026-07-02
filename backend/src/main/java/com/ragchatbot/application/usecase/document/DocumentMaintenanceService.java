@@ -57,4 +57,15 @@ public class DocumentMaintenanceService {
                 chapterCode.trim()
         ) > 0;
     }
+
+    public boolean hasIndexedDocumentsForConversation(String conversationSessionId) {
+        if (conversationSessionId == null || conversationSessionId.isBlank()) {
+            return false;
+        }
+
+        return documentRepository.countByStatusAndConversationSessionId(
+                DocumentStatus.INDEXED,
+                conversationSessionId.trim()
+        ) > 0;
+    }
 }

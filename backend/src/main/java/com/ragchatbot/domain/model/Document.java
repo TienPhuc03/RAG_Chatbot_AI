@@ -44,6 +44,9 @@ public class Document {
     @Column(name = "chapter_title", length = 255)
     private String chapterTitle;
 
+    @Column(name = "conversation_session_id", length = 100)
+    private String conversationSessionId;
+
     @Column(name = "indexed_at")
     private Instant indexedAt;
 
@@ -142,6 +145,14 @@ public class Document {
 
     public void setChapterTitle(String chapterTitle) {
         this.chapterTitle = chapterTitle;
+    }
+
+    public String getConversationSessionId() {
+        return conversationSessionId;
+    }
+
+    public void setConversationSessionId(String conversationSessionId) {
+        this.conversationSessionId = conversationSessionId;
     }
 
     public Instant getIndexedAt() {

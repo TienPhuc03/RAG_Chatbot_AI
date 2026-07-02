@@ -28,9 +28,9 @@ public class GetDocumentsUseCase {
 
     public List<Document> getEntities(String courseCode) {
         if (!StringUtils.hasText(courseCode)) {
-            return documentRepository.findAll();
+            return documentRepository.findAllByConversationSessionIdIsNullOrderByCreatedAtDesc();
         }
-        return documentRepository.findByCourseCode(courseCode);
+        return documentRepository.findByCourseCodeAndConversationSessionIdIsNullOrderByCreatedAtDesc(courseCode);
     }
 
     public List<DocumentListResponse> execute(String courseCode) {

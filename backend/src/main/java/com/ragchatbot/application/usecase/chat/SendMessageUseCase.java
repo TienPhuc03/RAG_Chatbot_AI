@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ragchatbot.application.dto.chat.ChatRequest;
 import com.ragchatbot.application.dto.chat.ChatResponse;
 import com.ragchatbot.application.usecase.document.DocumentMaintenanceService;
+import com.ragchatbot.domain.enums.DocumentStatus;
 import com.ragchatbot.domain.enums.MessageRole;
 import com.ragchatbot.domain.model.Conversation;
+import com.ragchatbot.domain.model.Document;
 import com.ragchatbot.domain.model.Message;
 import com.ragchatbot.domain.port.ConversationTurn;
 import com.ragchatbot.domain.port.EmbeddingService;
@@ -98,14 +100,28 @@ public class SendMessageUseCase {
                 null
         );
 
+        String conversationSessionId = conversation.getSessionId();
         String courseCode = blankToNull(request.courseCode());
         String chapterCode = blankToNull(request.chapterCode());
-        if (!hasIndexedDocuments(courseCode, chapterCode)) {
-            return buildUnavailableDocumentResponse(
+        List<Document> conversationAttachments = documentRepository.findByConversationSessionIdOrderByCreatedAtAsc(
+                conversationSessionId
+        );
+
+        AttachmentResolution attachmentResolution = resolveAttachmentState(conversationAttachments);
+        if (attachmentResolution.shouldStop()) {
+            return buildAssistantOnlyResponse(
                     conversation,
                     assistantSequenceNo,
-                    courseCode,
-                    chapterCode
+                    attachmentResolution.message()
+            );
+        }
+
+        boolean useConversationAttachments = attachmentResolution.useIndexedAttachments();
+        if (!useConversationAttachments && !hasIndexedDocuments(courseCode, chapterCode)) {
+            return buildAssistantOnlyResponse(
+                    conversation,
+                    assistantSequenceNo,
+                    buildUnavailableDocumentMessage(courseCode, chapterCode)
             );
         }
 
@@ -114,9 +130,18 @@ public class SendMessageUseCase {
         List<RetrievedContext> retrievedContexts = vectorStoreService.search(
                 questionEmbedding,
                 5,
-                courseCode,
-                chapterCode
+                useConversationAttachments ? null : courseCode,
+                useConversationAttachments ? null : chapterCode,
+                useConversationAttachments ? conversationSessionId : null
         );
+
+        if (useConversationAttachments && retrievedContexts.isEmpty()) {
+            return buildAssistantOnlyResponse(
+                    conversation,
+                    assistantSequenceNo,
+                    "Khong tim thay ngu canh phu hop trong file da gan. Hay hoi cu the hon hoac thu file khac."
+            );
+        }
 
         LlmAnswer answer = llmInferenceService.generateAnswer(
                 request.question(),
@@ -146,29 +171,14 @@ public class SendMessageUseCase {
     }
 
     private boolean hasIndexedDocuments(String courseCode, String chapterCode) {
-        if (courseCode == null) {
-            return documentRepository.countByStatus(com.ragchatbot.domain.enums.DocumentStatus.INDEXED) > 0;
-        }
-        if (chapterCode == null) {
-            return documentRepository.countByStatusAndCourseCode(
-                    com.ragchatbot.domain.enums.DocumentStatus.INDEXED,
-                    courseCode
-            ) > 0;
-        }
-        return documentRepository.countByStatusAndCourseCodeAndChapterCode(
-                com.ragchatbot.domain.enums.DocumentStatus.INDEXED,
-                courseCode,
-                chapterCode
-        ) > 0;
+        return documentMaintenanceService.hasIndexedDocuments(courseCode, chapterCode);
     }
 
-    private ChatResponse buildUnavailableDocumentResponse(
+    private ChatResponse buildAssistantOnlyResponse(
             Conversation conversation,
             int assistantSequenceNo,
-            String courseCode,
-            String chapterCode
+            String answer
     ) {
-        String answer = buildUnavailableDocumentMessage(courseCode, chapterCode);
         saveMessage(conversation, assistantSequenceNo, MessageRole.ASSISTANT, answer, "[]");
         conversation.setUpdatedAt(Instant.now());
         conversationRepository.saveAndFlush(conversation);
@@ -177,6 +187,38 @@ public class SendMessageUseCase {
                 conversation.getSessionId(),
                 answer,
                 false
+        );
+    }
+
+    private AttachmentResolution resolveAttachmentState(List<Document> conversationAttachments) {
+        if (conversationAttachments == null || conversationAttachments.isEmpty()) {
+            return AttachmentResolution.withoutAttachment();
+        }
+
+        boolean hasProcessingAttachment = conversationAttachments.stream()
+                .map(Document::getStatus)
+                .anyMatch(status -> status == DocumentStatus.PENDING || status == DocumentStatus.PROCESSING);
+        if (hasProcessingAttachment) {
+            return AttachmentResolution.stop(
+                    "File dang duoc xu ly. Vui long doi index xong roi gui cau hoi lai."
+            );
+        }
+
+        List<Document> indexedAttachments = conversationAttachments.stream()
+                .filter(document -> document.getStatus() == DocumentStatus.INDEXED)
+                .toList();
+        if (!indexedAttachments.isEmpty()) {
+            return AttachmentResolution.withIndexedAttachments();
+        }
+
+        Document latestFailedAttachment = conversationAttachments.get(conversationAttachments.size() - 1);
+        String failureReason = latestFailedAttachment.getFailureReason();
+        if (StringUtils.hasText(failureReason)) {
+            return AttachmentResolution.stop("File da gan bi loi: " + failureReason);
+        }
+
+        return AttachmentResolution.stop(
+                "File da gan chua san sang de tra loi. Hay thu upload lai bang DOCX hoac PDF co the copy text."
         );
     }
 
@@ -250,5 +292,23 @@ public class SendMessageUseCase {
 
     private String blankToNull(String value) {
         return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private record AttachmentResolution(
+            boolean useIndexedAttachments,
+            boolean shouldStop,
+            String message
+    ) {
+        private static AttachmentResolution withoutAttachment() {
+            return new AttachmentResolution(false, false, null);
+        }
+
+        private static AttachmentResolution withIndexedAttachments() {
+            return new AttachmentResolution(true, false, null);
+        }
+
+        private static AttachmentResolution stop(String message) {
+            return new AttachmentResolution(false, true, message);
+        }
     }
 }
