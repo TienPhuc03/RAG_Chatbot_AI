@@ -81,7 +81,8 @@ class QdrantVectorStoreServiceTest {
                 "page_number",
                 "token_count",
                 "course_code",
-                "chapter_code"
+                "chapter_code",
+                "session_id"
         );
         assertThat(point.getPayloadMap().get("document_id").getStringValue()).isEqualTo(documentId.toString());
         assertThat(point.getPayloadMap().get("course_code").getStringValue()).isEqualTo("JAVA101");
@@ -124,7 +125,8 @@ class QdrantVectorStoreServiceTest {
                 List.of(0.1f, 0.2f, 0.3f),
                 5,
                 "JAVA101",
-                "CH1"
+                "CH1",
+                null
         );
 
         assertThat(contexts).hasSize(1);

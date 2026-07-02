@@ -1,16 +1,19 @@
 package com.ragchatbot.application.usecase.document;
 
-import com.ragchatbot.application.dto.document.DocumentUploadResponse;
-import com.ragchatbot.domain.enums.DocumentStatus;
-import com.ragchatbot.domain.model.Document;
-import com.ragchatbot.infrastructure.persistence.DocumentRepository;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.ragchatbot.application.dto.document.DocumentUploadResponse;
+import com.ragchatbot.domain.enums.ChunkingStrategy;
+import com.ragchatbot.domain.enums.DocumentStatus;
+import com.ragchatbot.domain.model.Document;
+import com.ragchatbot.infrastructure.persistence.DocumentRepository;
 
 @Service
 public class UploadDocumentUseCase {
@@ -31,7 +34,8 @@ public class UploadDocumentUseCase {
             String courseCode,
             String courseName,
             String chapterCode,
-            String chapterTitle
+            String chapterTitle,
+            ChunkingStrategy chunkingStrategy
     ) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File must not be empty");
@@ -56,10 +60,6 @@ public class UploadDocumentUseCase {
         }
 
         String checksum = sha256Hex(content);
-        Document existing = documentRepository.findByChecksum(checksum).orElse(null);
-        if (existing != null) {
-            return toResponse(existing);
-        }
 
         Document document = new Document();
         document.setId(UUID.randomUUID());
@@ -84,7 +84,9 @@ public class UploadDocumentUseCase {
                 courseName,
                 blankToNull(chapterCode),
                 blankToNull(chapterTitle),
-                checksum
+                null,
+                checksum,
+                chunkingStrategy
         ));
 
         return toResponse(document);

@@ -49,7 +49,7 @@ public class DocumentViewController {
             Model model
     ) {
         // Lấy danh sách tài liệu theo môn học
-        List<Document> docs = getDocumentsUseCase.execute(courseCode);
+        List<Document> docs = getDocumentsUseCase.getEntities(courseCode);
 
         // Đếm chunk của từng document: Map<documentId, chunkCount>
         Map<UUID, Long> chunkCounts = docs.stream()

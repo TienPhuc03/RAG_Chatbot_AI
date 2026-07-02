@@ -14,7 +14,7 @@ public class QdrantProperties {
     private String qdrantHost = "localhost";
 
     @Min(1)
-    private int qdrantPort = 6333;
+    private int qdrantPort = 6334;
 
     @NotBlank
     private String collectionName = "rag_chunks";

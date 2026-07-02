@@ -11,5 +11,6 @@ import java.util.UUID;
 public record DocumentStatusResponse(
         UUID id,
         DocumentStatus status,
-        Instant indexedAt
+        Instant indexedAt,
+        String failureReason
 ) {}

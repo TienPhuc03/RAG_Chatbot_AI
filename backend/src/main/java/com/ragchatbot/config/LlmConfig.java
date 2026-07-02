@@ -5,6 +5,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "rag.llm")
 public record LlmConfig(
 
+        String provider,
+
         String ollamaBaseUrl,
 
         String ollamaModel,

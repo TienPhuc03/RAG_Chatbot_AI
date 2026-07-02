@@ -1,17 +1,23 @@
 package com.ragchatbot.application.dto.document;
 
+import com.ragchatbot.domain.enums.ChunkingStrategy;
+import com.ragchatbot.domain.enums.DocumentStatus;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.ragchatbot.domain.enums.DocumentStatus;
-
-//DTO trả về khi FE muốn lấy danh sách tài liệu đã upload, bao gồm thông tin cơ bản và trạng thái hiện tại của từng tài liệu
 public record DocumentListResponse(
         UUID id,
         String title,
         String sourceFileName,
         String courseCode,
-        String courseName,      
+        String courseName,
+        String chapterCode,
+        String chapterTitle,
         DocumentStatus status,
-        Instant createdAt       //thời điểm upload tài liệu lên hệ thống
-) {}
+        String failureReason,
+        Long chunkCount,
+        ChunkingStrategy latestChunkingStrategy,
+        Instant indexedAt,
+        Instant createdAt
+) {
+}

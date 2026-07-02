@@ -2,7 +2,9 @@ package com.ragchatbot.application.usecase.document;
 
 import java.util.UUID;
 
-record DocumentUploadJob(
+import com.ragchatbot.domain.enums.ChunkingStrategy;
+
+public record DocumentUploadJob(
         UUID documentId,
         byte[] content,
         String originalFileName,
@@ -11,6 +13,7 @@ record DocumentUploadJob(
         String courseName,
         String chapterCode,
         String chapterTitle,
-        String checksum
-) {
-}
+        String conversationSessionId,
+        String checksum,
+        ChunkingStrategy chunkingStrategy
+) {}

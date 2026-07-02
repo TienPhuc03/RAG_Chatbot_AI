@@ -48,6 +48,7 @@ public class QdrantVectorStoreService implements VectorStoreService {
     private static final String PAYLOAD_TOKEN_COUNT = "token_count";
     private static final String PAYLOAD_COURSE_CODE = "course_code";
     private static final String PAYLOAD_CHAPTER_CODE = "chapter_code";
+    private static final String PAYLOAD_SESSION_ID = "session_id";
 
     private final QdrantClient qdrantClient;
     private final QdrantProperties properties;
@@ -124,7 +125,13 @@ public class QdrantVectorStoreService implements VectorStoreService {
     }
 
     @Override
-    public List<RetrievedContext> search(List<Float> queryEmbedding, int topK, String courseCode, String chapterCode) {
+    public List<RetrievedContext> search(
+            List<Float> queryEmbedding,
+            int topK,
+            String courseCode,
+            String chapterCode,
+            String conversationSessionId
+    ) {
         if (topK <= 0) {
             return List.of();
         }
@@ -136,7 +143,7 @@ public class QdrantVectorStoreService implements VectorStoreService {
                 .setLimit(topK)
                 .setWithPayload(enable(true));
 
-        Filter filter = filterFor(courseCode, chapterCode);
+        Filter filter = filterFor(courseCode, chapterCode, conversationSessionId);
         if (filter != null) {
             searchBuilder.setFilter(filter);
         }
@@ -179,11 +186,15 @@ public class QdrantVectorStoreService implements VectorStoreService {
         payload.put(PAYLOAD_TOKEN_COUNT, nullableLong(chunk.tokenCount()));
         payload.put(PAYLOAD_COURSE_CODE, nullableString(document.getCourseCode()));
         payload.put(PAYLOAD_CHAPTER_CODE, nullableString(document.getChapterCode()));
+        payload.put(PAYLOAD_SESSION_ID, nullableString(document.getConversationSessionId()));
         return payload;
     }
 
-    private Filter filterFor(String courseCode, String chapterCode) {
+    private Filter filterFor(String courseCode, String chapterCode, String conversationSessionId) {
         Filter.Builder filterBuilder = Filter.newBuilder();
+        if (hasText(conversationSessionId)) {
+            filterBuilder.addMust(matchKeyword(PAYLOAD_SESSION_ID, conversationSessionId));
+        }
         if (hasText(courseCode)) {
             filterBuilder.addMust(matchKeyword(PAYLOAD_COURSE_CODE, courseCode));
         }

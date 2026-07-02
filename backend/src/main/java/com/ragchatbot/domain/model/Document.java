@@ -29,7 +29,7 @@ public class Document {
     @Column(name = "content_type", nullable = false, length = 255)
     private String contentType;
 
-    @Column(nullable = false, unique = true, length = 255)
+    @Column(nullable = false, length = 255)
     private String checksum;
 
     @Column(name = "course_code", nullable = false, length = 50)
@@ -44,8 +44,14 @@ public class Document {
     @Column(name = "chapter_title", length = 255)
     private String chapterTitle;
 
+    @Column(name = "conversation_session_id", length = 100)
+    private String conversationSessionId;
+
     @Column(name = "indexed_at")
     private Instant indexedAt;
+
+    @Column(name = "failure_reason", columnDefinition = "TEXT")
+    private String failureReason;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -141,12 +147,28 @@ public class Document {
         this.chapterTitle = chapterTitle;
     }
 
+    public String getConversationSessionId() {
+        return conversationSessionId;
+    }
+
+    public void setConversationSessionId(String conversationSessionId) {
+        this.conversationSessionId = conversationSessionId;
+    }
+
     public Instant getIndexedAt() {
         return indexedAt;
     }
 
     public void setIndexedAt(Instant indexedAt) {
         this.indexedAt = indexedAt;
+    }
+
+    public String getFailureReason() {
+        return failureReason;
+    }
+
+    public void setFailureReason(String failureReason) {
+        this.failureReason = failureReason;
     }
 
     public DocumentStatus getStatus() {

@@ -1,12 +1,16 @@
 package com.ragchatbot.api;
 
+import com.ragchatbot.application.dto.chat.ChatAttachmentItemResponse;
+import com.ragchatbot.application.dto.chat.ChatAttachmentUploadResponse;
 import com.ragchatbot.application.dto.chat.ChatRequest;
 import com.ragchatbot.application.dto.chat.ChatResponse;
 import com.ragchatbot.application.dto.chat.ChatHistoryMessageDto;
 import com.ragchatbot.application.dto.chat.ConversationSummaryDto;
+import com.ragchatbot.application.usecase.chat.GetChatAttachmentsUseCase;
 import com.ragchatbot.application.usecase.chat.GetChatHistoryUseCase;
 import com.ragchatbot.application.usecase.chat.GetConversationsUseCase;
 import com.ragchatbot.application.usecase.chat.SendMessageUseCase;
+import com.ragchatbot.application.usecase.chat.UploadChatAttachmentUseCase;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,6 +23,9 @@ import jakarta.validation.Valid;
 
 
 import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -27,15 +34,21 @@ public class ChatController {
     private final SendMessageUseCase sendMessageUseCase;
     private final GetChatHistoryUseCase getChatHistoryUseCase;
     private final GetConversationsUseCase getConversationsUseCase;
+    private final UploadChatAttachmentUseCase uploadChatAttachmentUseCase;
+    private final GetChatAttachmentsUseCase getChatAttachmentsUseCase;
 
     public ChatController(
             SendMessageUseCase sendMessageUseCase,
             GetChatHistoryUseCase getChatHistoryUseCase,
-            GetConversationsUseCase getConversationsUseCase
+            GetConversationsUseCase getConversationsUseCase,
+            UploadChatAttachmentUseCase uploadChatAttachmentUseCase,
+            GetChatAttachmentsUseCase getChatAttachmentsUseCase
     ) {
         this.sendMessageUseCase = sendMessageUseCase;
         this.getChatHistoryUseCase = getChatHistoryUseCase;
         this.getConversationsUseCase = getConversationsUseCase;
+        this.uploadChatAttachmentUseCase = uploadChatAttachmentUseCase;
+        this.getChatAttachmentsUseCase = getChatAttachmentsUseCase;
     }
 
     /**
@@ -67,6 +80,20 @@ public class ChatController {
             @RequestBody ChatRequest request
     ) {
         return sendMessageUseCase.execute(request);
+    }
+
+    @PostMapping("/attachments")
+    public ResponseEntity<ChatAttachmentUploadResponse> uploadAttachment(
+            @RequestParam(required = false) String sessionId,
+            @RequestParam("file") MultipartFile file
+    ) {
+        ChatAttachmentUploadResponse response = uploadChatAttachmentUseCase.execute(sessionId, file);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+    }
+
+    @GetMapping("/attachments/{sessionId}")
+    public ResponseEntity<List<ChatAttachmentItemResponse>> getAttachments(@PathVariable String sessionId) {
+        return ResponseEntity.ok(getChatAttachmentsUseCase.execute(sessionId));
     }
 
     /**

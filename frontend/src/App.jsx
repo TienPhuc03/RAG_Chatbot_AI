@@ -1,7 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import BenchmarkPage from "./pages/BenchmarkPage";
 import ChatPage from "./pages/ChatPage";
+import DocumentsPage from "./pages/DocumentsPage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -23,6 +25,8 @@ function App() {
       >
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/chat/:sessionId" element={<ChatPage />} />
+        <Route path="/documents" element={<DocumentsPage />} />
+        <Route path="/benchmark" element={<BenchmarkPage />} />
         <Route path="/templates" element={<TemplatesPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>

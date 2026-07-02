@@ -59,4 +59,53 @@ class GeminiLlmInferenceServiceTest {
         assertThat(answer.groundedInDocuments()).isTrue();
         assertThat(answer.citations()).containsExactly(documentId + ":" + chunkId);
     }
+
+    @Test
+    void fallsBackToOllamaWhenGeminiQuotaIsExceeded() {
+        GeminiProperties properties = new GeminiProperties();
+        properties.setChatModel("gemini-2.5-flash");
+
+        GeminiApiClient fakeClient = new GeminiApiClient() {
+            @Override
+            public String generateContent(String modelName, String prompt) {
+                throw new RuntimeException("429 quota exceeded for generate content");
+            }
+
+            @Override
+            public List<Float> embedContent(String modelName, String text) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public List<List<Float>> embedContents(String modelName, List<String> texts) {
+                throw new UnsupportedOperationException();
+            }
+        };
+
+        GeminiLlmInferenceService service = new GeminiLlmInferenceService(
+                properties,
+                fakeClient,
+                (question, conversationHistory, retrievedContexts) -> new LlmAnswer(
+                        "Tra loi tu Ollama fallback.",
+                        List.of("fallback-citation"),
+                        true
+                )
+        );
+
+        LlmAnswer answer = service.generateAnswer(
+                "Java la gi?",
+                List.of(new ConversationTurn(MessageRole.USER, "Cho minh biet them.")),
+                List.of(new RetrievedContext(
+                        UUID.randomUUID(),
+                        UUID.randomUUID(),
+                        "Java la ngon ngu lap trinh.",
+                        0.9,
+                        "JAVA101",
+                        "CH1"))
+        );
+
+        assertThat(answer.answer()).isEqualTo("Tra loi tu Ollama fallback.");
+        assertThat(answer.citations()).containsExactly("fallback-citation");
+        assertThat(answer.groundedInDocuments()).isTrue();
+    }
 }

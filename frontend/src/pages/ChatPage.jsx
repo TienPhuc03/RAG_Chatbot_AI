@@ -4,7 +4,13 @@ import ChatComposer from "../components/ChatComposer";
 import ChatMessage from "../components/ChatMessage";
 import ChatWelcome from "../components/ChatWelcome";
 import { useConversations } from "../context/ConversationsContext";
-import { fetchChatHistory, sendMessage } from "../services/chatService";
+import { fetchDocumentStatus } from "../services/documentService";
+import {
+  fetchChatAttachments,
+  fetchChatHistory,
+  sendMessage,
+  uploadChatAttachment,
+} from "../services/chatService";
 
 function toUiMessage(message) {
   return {
@@ -16,12 +22,21 @@ function toUiMessage(message) {
   };
 }
 
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function ChatPage() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { refreshConversations } = useConversations();
   const [composerValue, setComposerValue] = useState("");
+  const [courseCode, setCourseCode] = useState("");
+  const [chapterCode, setChapterCode] = useState("");
   const [messages, setMessages] = useState([]);
+  const [attachments, setAttachments] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [attachmentNotice, setAttachmentNotice] = useState("");
   const [historyLoading, setHistoryLoading] = useState(false);
   const [sendLoading, setSendLoading] = useState(false);
   const [error, setError] = useState("");
@@ -34,28 +49,35 @@ function ChatPage() {
   useEffect(() => {
     if (!sessionId) {
       setMessages([]);
+      setAttachments([]);
+      setAttachmentNotice("");
       setError("");
       return;
     }
 
     let active = true;
 
-    async function loadHistory() {
+    async function loadConversationData() {
       setHistoryLoading(true);
       setError("");
       setMessages([]);
 
       try {
-        const response = await fetchChatHistory(sessionId);
+        const [historyResponse, attachmentResponse] = await Promise.all([
+          fetchChatHistory(sessionId),
+          fetchChatAttachments(sessionId),
+        ]);
+
         if (!active) {
           return;
         }
-        setMessages(response.map(toUiMessage));
+
+        setMessages(historyResponse.map(toUiMessage));
+        setAttachments(attachmentResponse);
       } catch (loadError) {
-        if (!active) {
-          return;
+        if (active) {
+          setError(loadError.message || "Unable to load this conversation.");
         }
-        setError(loadError.message || "Unable to load this conversation.");
       } finally {
         if (active) {
           setHistoryLoading(false);
@@ -63,7 +85,7 @@ function ChatPage() {
       }
     }
 
-    loadHistory();
+    loadConversationData();
 
     return () => {
       active = false;
@@ -72,6 +94,16 @@ function ChatPage() {
 
   const isWelcomeState = !sessionId && !historyLoading && messages.length === 0 && !error;
 
+  const updateAttachmentItem = (documentId, patch) => {
+    setAttachments((current) =>
+      current.map((attachment) =>
+        attachment.documentId === documentId
+          ? { ...attachment, ...patch }
+          : attachment
+      )
+    );
+  };
+
   const handleSubmit = async (prompt = composerValue) => {
     const trimmedPrompt = prompt.trim();
 
@@ -79,25 +111,77 @@ function ChatPage() {
       return;
     }
 
-    const optimisticMessage = {
-      id: `local-user-${Date.now()}`,
-      role: "USER",
-      content: trimmedPrompt,
-      createdAt: new Date().toISOString(),
-      groundedInDocuments: false,
-    };
-
-    setComposerValue("");
     setError("");
-    setMessages((current) => [...current, optimisticMessage]);
     setSendLoading(true);
 
     try {
+      let activeSessionId = sessionId || null;
+
+      if (selectedFile) {
+        setAttachmentNotice(`Dang tai file ${selectedFile.name}...`);
+
+        const uploadResponse = await uploadChatAttachment({
+          sessionId: activeSessionId,
+          file: selectedFile,
+        });
+
+        activeSessionId = uploadResponse.sessionId;
+        const uploadedAttachment = {
+          documentId: uploadResponse.documentId,
+          fileName: uploadResponse.fileName,
+          status: uploadResponse.status,
+          failureReason: uploadResponse.failureReason,
+          indexedAt: null,
+        };
+
+        setAttachments((current) => [...current, uploadedAttachment]);
+        setSelectedFile(null);
+
+        if (!sessionId && activeSessionId) {
+          navigate(`/chat/${activeSessionId}`, { replace: true });
+        }
+
+        let currentStatus = uploadResponse.status;
+        let failureReason = uploadResponse.failureReason || "";
+        setAttachmentNotice("Dang doc file...");
+
+        while (currentStatus === "PENDING" || currentStatus === "PROCESSING") {
+          await wait(2000);
+          const statusResponse = await fetchDocumentStatus(uploadResponse.documentId);
+          currentStatus = statusResponse.status;
+          failureReason = statusResponse.failureReason || "";
+          updateAttachmentItem(uploadResponse.documentId, {
+            status: currentStatus,
+            failureReason,
+            indexedAt: statusResponse.indexedAt,
+          });
+        }
+
+        if (currentStatus === "FAILED") {
+          setAttachmentNotice(failureReason || "File that bai.");
+          await refreshConversations();
+          return;
+        }
+
+        setAttachmentNotice(`File ${uploadResponse.fileName} da san sang.`);
+      }
+
+      const optimisticMessage = {
+        id: `local-user-${Date.now()}`,
+        role: "USER",
+        content: trimmedPrompt,
+        createdAt: new Date().toISOString(),
+        groundedInDocuments: false,
+      };
+
+      setComposerValue("");
+      setMessages((current) => [...current, optimisticMessage]);
+
       const response = await sendMessage({
-        sessionId: sessionId || null,
+        sessionId: activeSessionId,
         question: trimmedPrompt,
-        courseCode: "",
-        chapterCode: "",
+        courseCode: courseCode.trim(),
+        chapterCode: chapterCode.trim(),
       });
 
       const assistantMessage = {
@@ -115,8 +199,8 @@ function ChatPage() {
         navigate(`/chat/${response.sessionId}`, { replace: true });
       }
     } catch (sendError) {
-      setMessages((current) => current.filter((message) => message.id !== optimisticMessage.id));
       setError(sendError.message || "Unable to send your message.");
+      await refreshConversations();
     } finally {
       setSendLoading(false);
     }
@@ -124,6 +208,29 @@ function ChatPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      <div className="mx-auto w-full max-w-4xl px-4 pt-6 sm:px-6 lg:px-8">
+        <div className="grid gap-4 rounded-[1.75rem] border border-border-subtle bg-white p-5 shadow-soft sm:grid-cols-2">
+          <label className="text-sm text-text-secondary">
+            Course code
+            <input
+              value={courseCode}
+              onChange={(event) => setCourseCode(event.target.value)}
+              placeholder="VD: DB101"
+              className="mt-2 h-11 w-full rounded-2xl border border-border-subtle px-4 text-text-primary outline-none"
+            />
+          </label>
+          <label className="text-sm text-text-secondary">
+            Chapter code
+            <input
+              value={chapterCode}
+              onChange={(event) => setChapterCode(event.target.value)}
+              placeholder="VD: CH1"
+              className="mt-2 h-11 w-full rounded-2xl border border-border-subtle px-4 text-text-primary outline-none"
+            />
+          </label>
+        </div>
+      </div>
+
       <div className="scrollbar-subtle flex-1 overflow-y-auto">
         {isWelcomeState ? (
           <ChatWelcome
@@ -159,7 +266,7 @@ function ChatPage() {
       </div>
 
       <div className="px-4 text-center text-sm text-text-muted sm:px-6 lg:px-8">
-        <p className="pb-2">AI can make mistakes. Verify important information.</p>
+        <p className="pb-2">AI co the mac loi. Hay xac minh thong tin quan trong.</p>
       </div>
 
       <ChatComposer
@@ -167,6 +274,11 @@ function ChatPage() {
         onChange={setComposerValue}
         onSubmit={() => handleSubmit()}
         loading={sendLoading}
+        selectedFile={selectedFile}
+        attachments={attachments}
+        attachmentNotice={attachmentNotice}
+        onPickFile={setSelectedFile}
+        onRemoveSelectedFile={() => setSelectedFile(null)}
       />
     </div>
   );

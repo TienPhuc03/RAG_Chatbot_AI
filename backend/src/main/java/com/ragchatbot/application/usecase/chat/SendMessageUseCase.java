@@ -3,8 +3,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ragchatbot.application.dto.chat.ChatRequest;
 import com.ragchatbot.application.dto.chat.ChatResponse;
+import com.ragchatbot.application.usecase.document.DocumentMaintenanceService;
+import com.ragchatbot.domain.enums.DocumentStatus;
 import com.ragchatbot.domain.enums.MessageRole;
 import com.ragchatbot.domain.model.Conversation;
+import com.ragchatbot.domain.model.Document;
 import com.ragchatbot.domain.model.Message;
 import com.ragchatbot.domain.port.ConversationTurn;
 import com.ragchatbot.domain.port.EmbeddingService;
@@ -13,6 +16,7 @@ import com.ragchatbot.domain.port.LlmInferenceService;
 import com.ragchatbot.domain.port.RetrievedContext;
 import com.ragchatbot.domain.port.VectorStoreService;
 import com.ragchatbot.infrastructure.persistence.ConversationRepository;
+import com.ragchatbot.infrastructure.persistence.DocumentRepository;
 import com.ragchatbot.infrastructure.persistence.MessageRepository;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -31,6 +35,8 @@ public class SendMessageUseCase {
 
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
+    private final DocumentRepository documentRepository;
+    private final DocumentMaintenanceService documentMaintenanceService;
     private final EmbeddingService embeddingService;
     private final VectorStoreService vectorStoreService;
     private final LlmInferenceService llmInferenceService;
@@ -39,6 +45,8 @@ public class SendMessageUseCase {
     public SendMessageUseCase(
             ConversationRepository conversationRepository,
             MessageRepository messageRepository,
+            DocumentRepository documentRepository,
+            DocumentMaintenanceService documentMaintenanceService,
             EmbeddingService embeddingService,
             VectorStoreService vectorStoreService,
             LlmInferenceService llmInferenceService,
@@ -46,6 +54,8 @@ public class SendMessageUseCase {
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
+        this.documentRepository = documentRepository;
+        this.documentMaintenanceService = documentMaintenanceService;
         this.embeddingService = embeddingService;
         this.vectorStoreService = vectorStoreService;
         this.llmInferenceService = llmInferenceService;
@@ -58,6 +68,7 @@ public class SendMessageUseCase {
         }
 
         Conversation conversation = resolveConversation(request);
+        documentMaintenanceService.reconcileStaleProcessingDocuments();
 
         if (!StringUtils.hasText(conversation.getTitle())) {
             conversation.setTitle(deriveTitle(request.question()));
@@ -89,14 +100,48 @@ public class SendMessageUseCase {
                 null
         );
 
+        String conversationSessionId = conversation.getSessionId();
+        String courseCode = blankToNull(request.courseCode());
+        String chapterCode = blankToNull(request.chapterCode());
+        List<Document> conversationAttachments = documentRepository.findByConversationSessionIdOrderByCreatedAtAsc(
+                conversationSessionId
+        );
+
+        AttachmentResolution attachmentResolution = resolveAttachmentState(conversationAttachments);
+        if (attachmentResolution.shouldStop()) {
+            return buildAssistantOnlyResponse(
+                    conversation,
+                    assistantSequenceNo,
+                    attachmentResolution.message()
+            );
+        }
+
+        boolean useConversationAttachments = attachmentResolution.useIndexedAttachments();
+        if (!useConversationAttachments && !hasIndexedDocuments(courseCode, chapterCode)) {
+            return buildAssistantOnlyResponse(
+                    conversation,
+                    assistantSequenceNo,
+                    buildUnavailableDocumentMessage(courseCode, chapterCode)
+            );
+        }
+
         List<Float> questionEmbedding = embeddingService.embed(request.question());
 
         List<RetrievedContext> retrievedContexts = vectorStoreService.search(
                 questionEmbedding,
                 5,
-                blankToNull(request.courseCode()),
-                blankToNull(request.chapterCode())
+                useConversationAttachments ? null : courseCode,
+                useConversationAttachments ? null : chapterCode,
+                useConversationAttachments ? conversationSessionId : null
         );
+
+        if (useConversationAttachments && retrievedContexts.isEmpty()) {
+            return buildAssistantOnlyResponse(
+                    conversation,
+                    assistantSequenceNo,
+                    "Khong tim thay ngu canh phu hop trong file da gan. Hay hoi cu the hon hoac thu file khac."
+            );
+        }
 
         LlmAnswer answer = llmInferenceService.generateAnswer(
                 request.question(),
@@ -125,6 +170,74 @@ public class SendMessageUseCase {
         );
     }
 
+    private boolean hasIndexedDocuments(String courseCode, String chapterCode) {
+        return documentMaintenanceService.hasIndexedDocuments(courseCode, chapterCode);
+    }
+
+    private ChatResponse buildAssistantOnlyResponse(
+            Conversation conversation,
+            int assistantSequenceNo,
+            String answer
+    ) {
+        saveMessage(conversation, assistantSequenceNo, MessageRole.ASSISTANT, answer, "[]");
+        conversation.setUpdatedAt(Instant.now());
+        conversationRepository.saveAndFlush(conversation);
+        return new ChatResponse(
+                conversation.getId().toString(),
+                conversation.getSessionId(),
+                answer,
+                false
+        );
+    }
+
+    private AttachmentResolution resolveAttachmentState(List<Document> conversationAttachments) {
+        if (conversationAttachments == null || conversationAttachments.isEmpty()) {
+            return AttachmentResolution.withoutAttachment();
+        }
+
+        boolean hasProcessingAttachment = conversationAttachments.stream()
+                .map(Document::getStatus)
+                .anyMatch(status -> status == DocumentStatus.PENDING || status == DocumentStatus.PROCESSING);
+        if (hasProcessingAttachment) {
+            return AttachmentResolution.stop(
+                    "File dang duoc xu ly. Vui long doi index xong roi gui cau hoi lai."
+            );
+        }
+
+        List<Document> indexedAttachments = conversationAttachments.stream()
+                .filter(document -> document.getStatus() == DocumentStatus.INDEXED)
+                .toList();
+        if (!indexedAttachments.isEmpty()) {
+            return AttachmentResolution.withIndexedAttachments();
+        }
+
+        Document latestFailedAttachment = conversationAttachments.get(conversationAttachments.size() - 1);
+        String failureReason = latestFailedAttachment.getFailureReason();
+        if (StringUtils.hasText(failureReason)) {
+            return AttachmentResolution.stop("File da gan bi loi: " + failureReason);
+        }
+
+        return AttachmentResolution.stop(
+                "File da gan chua san sang de tra loi. Hay thu upload lai bang DOCX hoac PDF co the copy text."
+        );
+    }
+
+    private String buildUnavailableDocumentMessage(String courseCode, String chapterCode) {
+        if (courseCode != null && chapterCode != null) {
+            return "Chua co tai lieu nao o trang thai INDEXED cho courseCode "
+                    + courseCode
+                    + " va chapterCode "
+                    + chapterCode
+                    + ". Hay upload file DOCX hoac PDF co the copy text, roi doi index xong.";
+        }
+        if (courseCode != null) {
+            return "Chua co tai lieu nao o trang thai INDEXED cho courseCode "
+                    + courseCode
+                    + ". Hay upload file DOCX hoac PDF co the copy text, roi doi index xong.";
+        }
+        return "He thong chua co tai lieu nao o trang thai INDEXED. Hay upload file DOCX hoac PDF co the copy text truoc khi chat.";
+    }
+
     private Conversation resolveConversation(ChatRequest request) {
         String sessionId = request.sessionId();
 
@@ -138,7 +251,6 @@ public class SendMessageUseCase {
 
     private Conversation createConversation(String sessionId, String firstQuestion) {
         Conversation conversation = new Conversation();
-        conversation.setId(UUID.randomUUID());
         conversation.setSessionId(sessionId);
         conversation.setTitle(deriveTitle(firstQuestion));
         return conversationRepository.saveAndFlush(conversation);
@@ -152,7 +264,6 @@ public class SendMessageUseCase {
             String citationPayload
     ) {
         Message message = new Message();
-        message.setId(UUID.randomUUID());
         message.setConversation(conversation);
         message.setSequenceNo(Math.toIntExact(sequenceNo));
         message.setRole(role);
@@ -181,5 +292,23 @@ public class SendMessageUseCase {
 
     private String blankToNull(String value) {
         return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private record AttachmentResolution(
+            boolean useIndexedAttachments,
+            boolean shouldStop,
+            String message
+    ) {
+        private static AttachmentResolution withoutAttachment() {
+            return new AttachmentResolution(false, false, null);
+        }
+
+        private static AttachmentResolution withIndexedAttachments() {
+            return new AttachmentResolution(true, false, null);
+        }
+
+        private static AttachmentResolution stop(String message) {
+            return new AttachmentResolution(false, true, message);
+        }
     }
 }
