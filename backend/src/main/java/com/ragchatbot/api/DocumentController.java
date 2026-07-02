@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 
 @RestController
 @RequestMapping("/api/documents")
@@ -51,7 +52,9 @@ public class DocumentController {
             @ApiResponse(responseCode = "202", description = "Upload accepted"),
             @ApiResponse(responseCode = "400", description = "Invalid file")
     })
-    @PostMapping("/upload")
+    @PostMapping(value = "/upload",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     public ResponseEntity<DocumentUploadResponse> uploadDocument(
             @Parameter(description = "File PDF, DOCX hoac PPTX can upload")
             @RequestParam("file") MultipartFile file,
