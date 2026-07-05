@@ -7,9 +7,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.ragchatbot.config.EmbeddingProperties;
 import com.ragchatbot.application.dto.document.DocumentUploadResponse;
 import com.ragchatbot.domain.enums.ChunkingStrategy;
 import com.ragchatbot.domain.enums.DocumentStatus;
+import com.ragchatbot.domain.enums.EmbeddingModel;
 import com.ragchatbot.infrastructure.persistence.DocumentRepository;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
@@ -21,9 +23,10 @@ class UploadDocumentUseCaseTest {
     void executeCreatesPendingDocumentAndDispatchesWorker() {
         DocumentIndexingWorker worker = mock(DocumentIndexingWorker.class);
         DocumentRepository repository = mock(DocumentRepository.class);
+        EmbeddingProperties embeddingProperties = new EmbeddingProperties();
         when(repository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        UploadDocumentUseCase useCase = new UploadDocumentUseCase(worker, repository);
+        UploadDocumentUseCase useCase = new UploadDocumentUseCase(worker, repository, embeddingProperties);
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "lecture-1.pdf",
@@ -37,11 +40,13 @@ class UploadDocumentUseCaseTest {
                 "Java Basics",
                 "CH1",
                 "Intro",
-                ChunkingStrategy.SEMANTIC
+                ChunkingStrategy.SEMANTIC,
+                EmbeddingModel.BGE_M3
         );
 
         assertThat(response.status()).isEqualTo(DocumentStatus.PENDING);
         assertThat(response.courseCode()).isEqualTo("JAVA101");
+        assertThat(response.embeddingModel()).isEqualTo(EmbeddingModel.BGE_M3);
         verify(worker).process(any(DocumentUploadJob.class));
     }
 
@@ -49,9 +54,10 @@ class UploadDocumentUseCaseTest {
     void executeAllowsSameFileForDifferentResearchRuns() {
         DocumentIndexingWorker worker = mock(DocumentIndexingWorker.class);
         DocumentRepository repository = mock(DocumentRepository.class);
+        EmbeddingProperties embeddingProperties = new EmbeddingProperties();
         when(repository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        UploadDocumentUseCase useCase = new UploadDocumentUseCase(worker, repository);
+        UploadDocumentUseCase useCase = new UploadDocumentUseCase(worker, repository, embeddingProperties);
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "lecture-duplicate.pdf",
@@ -65,7 +71,8 @@ class UploadDocumentUseCaseTest {
                 "Java Basics",
                 "CH1",
                 "Intro",
-                ChunkingStrategy.FIXED_SIZE
+                ChunkingStrategy.FIXED_SIZE,
+                EmbeddingModel.MULTILINGUAL_E5_BASE
         );
         DocumentUploadResponse second = useCase.execute(
                 file,
@@ -73,10 +80,12 @@ class UploadDocumentUseCaseTest {
                 "Java Basics",
                 "CH1",
                 "Intro",
-                ChunkingStrategy.SEMANTIC
+                ChunkingStrategy.SEMANTIC,
+                null
         );
 
         assertThat(first.id()).isNotEqualTo(second.id());
+        assertThat(second.embeddingModel()).isEqualTo(EmbeddingModel.GEMINI_EMBEDDING_001);
         verify(worker, times(2)).process(any(DocumentUploadJob.class));
     }
 }

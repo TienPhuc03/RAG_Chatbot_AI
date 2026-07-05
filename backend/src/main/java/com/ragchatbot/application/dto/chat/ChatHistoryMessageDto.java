@@ -2,6 +2,7 @@ package com.ragchatbot.application.dto.chat;
 
 import com.ragchatbot.domain.enums.MessageRole;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record ChatHistoryMessageDto(
@@ -9,6 +10,8 @@ public record ChatHistoryMessageDto(
         MessageRole role,
         String content,
         Instant createdAt,
-        String citationPayload
+        boolean groundedInDocuments,
+        String citationPayload,
+        List<ChatCitationDto> citations
 ) {
 }

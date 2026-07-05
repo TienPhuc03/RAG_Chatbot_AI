@@ -1,6 +1,7 @@
 package com.ragchatbot.application.usecase.document;
 
 import com.ragchatbot.application.dto.document.DocumentListResponse;
+import com.ragchatbot.domain.enums.EmbeddingModel;
 import com.ragchatbot.domain.model.Chunk;
 import com.ragchatbot.domain.model.Document;
 import com.ragchatbot.infrastructure.persistence.ChunkRepository;
@@ -43,6 +44,7 @@ public class GetDocumentsUseCase {
     private DocumentListResponse toResponse(Document document) {
         long chunkCount = chunkRepository.countByDocumentId(document.getId());
         Chunk firstChunk = chunkRepository.findTopByDocumentIdOrderByChunkIndexAsc(document.getId()).orElse(null);
+        EmbeddingModel embeddingModel = firstChunk == null ? null : firstChunk.getEmbeddingModel();
 
         return new DocumentListResponse(
                 document.getId(),
@@ -56,6 +58,7 @@ public class GetDocumentsUseCase {
                 document.getFailureReason(),
                 chunkCount,
                 firstChunk == null ? null : firstChunk.getChunkingStrategy(),
+                embeddingModel,
                 document.getIndexedAt(),
                 document.getCreatedAt()
         );

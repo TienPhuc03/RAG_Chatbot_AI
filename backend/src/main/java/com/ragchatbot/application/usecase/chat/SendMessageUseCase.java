@@ -1,20 +1,21 @@
 package com.ragchatbot.application.usecase.chat;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ragchatbot.config.EmbeddingProperties;
+import com.ragchatbot.application.dto.chat.ChatCitationDto;
 import com.ragchatbot.application.dto.chat.ChatRequest;
 import com.ragchatbot.application.dto.chat.ChatResponse;
 import com.ragchatbot.application.usecase.document.DocumentMaintenanceService;
 import com.ragchatbot.domain.enums.DocumentStatus;
+import com.ragchatbot.domain.enums.EmbeddingModel;
 import com.ragchatbot.domain.enums.MessageRole;
 import com.ragchatbot.domain.model.Conversation;
 import com.ragchatbot.domain.model.Document;
 import com.ragchatbot.domain.model.Message;
 import com.ragchatbot.domain.port.ConversationTurn;
-import com.ragchatbot.domain.port.EmbeddingService;
 import com.ragchatbot.domain.port.LlmAnswer;
 import com.ragchatbot.domain.port.LlmInferenceService;
 import com.ragchatbot.domain.port.RetrievedContext;
 import com.ragchatbot.domain.port.VectorStoreService;
+import com.ragchatbot.infrastructure.embedding.EmbeddingRouter;
 import com.ragchatbot.infrastructure.persistence.ConversationRepository;
 import com.ragchatbot.infrastructure.persistence.DocumentRepository;
 import com.ragchatbot.infrastructure.persistence.MessageRepository;
@@ -23,43 +24,42 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
 public class SendMessageUseCase {
 
-    private static final Logger log = LoggerFactory.getLogger(SendMessageUseCase.class);
-
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
     private final DocumentRepository documentRepository;
     private final DocumentMaintenanceService documentMaintenanceService;
-    private final EmbeddingService embeddingService;
+    private final EmbeddingRouter embeddingRouter;
+    private final EmbeddingProperties embeddingProperties;
     private final VectorStoreService vectorStoreService;
     private final LlmInferenceService llmInferenceService;
-    private final ObjectMapper objectMapper;
+    private final ChatCitationPayloadCodec citationPayloadCodec;
 
     public SendMessageUseCase(
             ConversationRepository conversationRepository,
             MessageRepository messageRepository,
             DocumentRepository documentRepository,
             DocumentMaintenanceService documentMaintenanceService,
-            EmbeddingService embeddingService,
+            EmbeddingRouter embeddingRouter,
+            EmbeddingProperties embeddingProperties,
             VectorStoreService vectorStoreService,
             LlmInferenceService llmInferenceService,
-            ObjectMapper objectMapper
+            ChatCitationPayloadCodec citationPayloadCodec
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.documentRepository = documentRepository;
         this.documentMaintenanceService = documentMaintenanceService;
-        this.embeddingService = embeddingService;
+        this.embeddingRouter = embeddingRouter;
+        this.embeddingProperties = embeddingProperties;
         this.vectorStoreService = vectorStoreService;
         this.llmInferenceService = llmInferenceService;
-        this.objectMapper = objectMapper;
+        this.citationPayloadCodec = citationPayloadCodec;
     }
 
     public ChatResponse execute(ChatRequest request) {
@@ -125,11 +125,14 @@ public class SendMessageUseCase {
             );
         }
 
-        List<Float> questionEmbedding = embeddingService.embed(request.question());
+        EmbeddingModel embeddingModel = embeddingProperties.getDefaultModel();
+        List<Float> questionEmbedding = embeddingRouter.embed(embeddingModel, request.question());
 
         List<RetrievedContext> retrievedContexts = vectorStoreService.search(
+                embeddingModel,
                 questionEmbedding,
                 5,
+                null,
                 useConversationAttachments ? null : courseCode,
                 useConversationAttachments ? null : chapterCode,
                 useConversationAttachments ? conversationSessionId : null
@@ -149,7 +152,8 @@ public class SendMessageUseCase {
                 retrievedContexts
         );
 
-        String citationPayload = serializeCitations(answer.citations());
+        List<ChatCitationDto> citations = citationPayloadCodec.toDtos(answer.citations());
+        String citationPayload = citationPayloadCodec.serialize(citations);
 
         saveMessage(
                 conversation,
@@ -166,7 +170,8 @@ public class SendMessageUseCase {
                 conversation.getId().toString(),
                 conversation.getSessionId(),
                 answer.answer(),
-                answer.groundedInDocuments()
+                answer.groundedInDocuments(),
+                citations
         );
     }
 
@@ -186,7 +191,8 @@ public class SendMessageUseCase {
                 conversation.getId().toString(),
                 conversation.getSessionId(),
                 answer,
-                false
+                false,
+                List.of()
         );
     }
 
@@ -270,15 +276,6 @@ public class SendMessageUseCase {
         message.setContent(content);
         message.setCitationPayload(citationPayload);
         return messageRepository.saveAndFlush(message);
-    }
-
-    private String serializeCitations(List<String> citations) {
-        try {
-            return objectMapper.writeValueAsString(citations == null ? List.of() : citations);
-        } catch (JsonProcessingException ex) {
-            log.warn("Failed to serialize citation payload", ex);
-            return "[]";
-        }
     }
 
     private String deriveTitle(String question) {

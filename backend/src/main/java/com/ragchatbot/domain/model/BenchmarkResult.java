@@ -33,11 +33,11 @@ public class BenchmarkResult {
     private ExperimentType experimentType;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "chunking_strategy", nullable = false, length = 50)
+    @Column(name = "chunking_strategy", length = 50)
     private ChunkingStrategy chunkingStrategy;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "embedding_model", nullable = false, length = 50)
+    @Column(name = "embedding_model", length = 50)
     private EmbeddingModel embeddingModel;
 
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -69,6 +69,12 @@ public class BenchmarkResult {
 
     @Column(name = "retrieval_hit")
     private Boolean retrievalHit;
+
+    @Column(name = "evaluation_source", length = 50)
+    private String evaluationSource;
+
+    @Column(name = "evaluation_fallback_used", nullable = false)
+    private Boolean evaluationFallbackUsed = Boolean.FALSE;
 
     @Column(name = "latency_ms")
     private Long latencyMs;
@@ -202,6 +208,22 @@ public class BenchmarkResult {
 
     public void setLatencyMs(Long latencyMs) {
         this.latencyMs = latencyMs;
+    }
+
+    public String getEvaluationSource() {
+        return evaluationSource;
+    }
+
+    public void setEvaluationSource(String evaluationSource) {
+        this.evaluationSource = evaluationSource;
+    }
+
+    public Boolean getEvaluationFallbackUsed() {
+        return evaluationFallbackUsed;
+    }
+
+    public void setEvaluationFallbackUsed(Boolean evaluationFallbackUsed) {
+        this.evaluationFallbackUsed = evaluationFallbackUsed;
     }
 
     public BigDecimal getCostUsd() {

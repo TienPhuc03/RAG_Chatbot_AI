@@ -6,6 +6,7 @@ public record EvaluationResponse(
         UUID benchmarkResultId,
         boolean fallbackUsed,
         String source,
+        String judgeProvider,
         long latencyMs,
         double exactMatch,
         double f1Score,

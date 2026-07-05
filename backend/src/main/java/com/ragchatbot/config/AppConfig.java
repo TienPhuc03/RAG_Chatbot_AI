@@ -14,7 +14,12 @@ import org.springframework.web.client.RestClient;
 
 @Configuration
 @EnableAsync
-@EnableConfigurationProperties({RagasEvaluationProperties.class, LlmConfig.class})
+@EnableConfigurationProperties({
+        RagasEvaluationProperties.class,
+        LlmConfig.class,
+        FineTunedBenchmarkProperties.class,
+        BenchmarkCostProperties.class
+})
 public class AppConfig implements AsyncConfigurer {
 
     @Bean

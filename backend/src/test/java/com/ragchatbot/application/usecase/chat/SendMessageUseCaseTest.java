@@ -8,19 +8,22 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ragchatbot.application.dto.chat.ChatCitationDto;
+import com.ragchatbot.config.EmbeddingProperties;
 import com.ragchatbot.application.dto.chat.ChatRequest;
 import com.ragchatbot.application.dto.chat.ChatResponse;
 import com.ragchatbot.application.usecase.document.DocumentMaintenanceService;
 import com.ragchatbot.domain.enums.DocumentStatus;
+import com.ragchatbot.domain.enums.EmbeddingModel;
 import com.ragchatbot.domain.enums.MessageRole;
 import com.ragchatbot.domain.model.Conversation;
 import com.ragchatbot.domain.model.Message;
 import com.ragchatbot.domain.port.ConversationTurn;
-import com.ragchatbot.domain.port.EmbeddingService;
 import com.ragchatbot.domain.port.LlmAnswer;
 import com.ragchatbot.domain.port.LlmInferenceService;
 import com.ragchatbot.domain.port.RetrievedContext;
 import com.ragchatbot.domain.port.VectorStoreService;
+import com.ragchatbot.infrastructure.embedding.EmbeddingRouter;
 import com.ragchatbot.infrastructure.persistence.ConversationRepository;
 import com.ragchatbot.infrastructure.persistence.DocumentRepository;
 import com.ragchatbot.infrastructure.persistence.MessageRepository;
@@ -38,10 +41,12 @@ class SendMessageUseCaseTest {
         MessageRepository messageRepository = mock(MessageRepository.class);
         DocumentRepository documentRepository = mock(DocumentRepository.class);
         DocumentMaintenanceService documentMaintenanceService = mock(DocumentMaintenanceService.class);
-        EmbeddingService embeddingService = mock(EmbeddingService.class);
+        EmbeddingRouter embeddingRouter = mock(EmbeddingRouter.class);
+        EmbeddingProperties embeddingProperties = new EmbeddingProperties();
         VectorStoreService vectorStoreService = mock(VectorStoreService.class);
         LlmInferenceService llmInferenceService = mock(LlmInferenceService.class);
         ObjectMapper objectMapper = new ObjectMapper();
+        ChatCitationPayloadCodec citationPayloadCodec = new ChatCitationPayloadCodec(objectMapper);
 
         when(conversationRepository.findBySessionId("session-1")).thenReturn(Optional.empty());
         when(conversationRepository.saveAndFlush(any())).thenAnswer(invocation -> {
@@ -73,7 +78,7 @@ class SendMessageUseCaseTest {
         when(messageRepository.findTop5ByConversationIdOrderBySequenceNoDesc(any()))
                 .thenReturn(List.of(previousAssistant, currentUser));
 
-        when(embeddingService.embed("Can nang Java la gi?"))
+        when(embeddingRouter.embed(EmbeddingModel.GEMINI_EMBEDDING_001, "Can nang Java la gi?"))
                 .thenReturn(List.of(0.1f, 0.2f, 0.3f));
         when(documentMaintenanceService.hasIndexedDocuments("JAVA101", "CH1")).thenReturn(true);
         when(documentRepository.findByConversationSessionIdOrderByCreatedAtAsc("session-1")).thenReturn(List.of());
@@ -84,11 +89,15 @@ class SendMessageUseCaseTest {
                 "Java la ngon ngu lap trinh.",
                 0.91,
                 "JAVA101",
-                "CH1"
+                "CH1",
+                "java-intro.pdf",
+                12
         );
         when(vectorStoreService.search(
+                eq(EmbeddingModel.GEMINI_EMBEDDING_001),
                 eq(List.of(0.1f, 0.2f, 0.3f)),
                 eq(5),
+                eq(null),
                 eq("JAVA101"),
                 eq("CH1"),
                 eq(null)
@@ -106,7 +115,11 @@ class SendMessageUseCaseTest {
                     .containsExactly(MessageRole.USER, MessageRole.ASSISTANT);
             assertThat(history).extracting(ConversationTurn::content)
                     .containsExactly("Previous question", "Before");
-            return new LlmAnswer("Java co the hoi, nhung rat manh.", List.of("doc-1:chunk-1"), true);
+            return new LlmAnswer(
+                    "Java co the hoi, nhung rat manh.",
+                    List.of(context.toCitationReference()),
+                    true
+            );
         });
 
         SendMessageUseCase useCase = new SendMessageUseCase(
@@ -114,10 +127,11 @@ class SendMessageUseCaseTest {
                 messageRepository,
                 documentRepository,
                 documentMaintenanceService,
-                embeddingService,
+                embeddingRouter,
+                embeddingProperties,
                 vectorStoreService,
                 llmInferenceService,
-                objectMapper
+                citationPayloadCodec
         );
 
         ChatResponse response = useCase.execute(new ChatRequest(
@@ -129,6 +143,17 @@ class SendMessageUseCaseTest {
 
         assertThat(response.answer()).isEqualTo("Java co the hoi, nhung rat manh.");
         assertThat(response.groundedInDocuments()).isTrue();
+        assertThat(response.citations()).containsExactly(
+                new ChatCitationDto(
+                        context.documentId(),
+                        context.chunkId(),
+                        "java-intro.pdf",
+                        12,
+                        "JAVA101",
+                        "CH1",
+                        0.91
+                )
+        );
 
         ArgumentCaptor<Message> messageCaptor = ArgumentCaptor.forClass(Message.class);
         verify(messageRepository, org.mockito.Mockito.times(2)).saveAndFlush(messageCaptor.capture());
@@ -136,7 +161,7 @@ class SendMessageUseCaseTest {
         assertThat(savedMessages).hasSize(2);
         assertThat(savedMessages.get(0).getRole()).isEqualTo(MessageRole.USER);
         assertThat(savedMessages.get(1).getRole()).isEqualTo(MessageRole.ASSISTANT);
-        assertThat(savedMessages.get(1).getCitationPayload()).isEqualTo("[\"doc-1:chunk-1\"]");
+        assertThat(savedMessages.get(1).getCitationPayload()).contains("java-intro.pdf", "\"pageNumber\":12");
         verify(conversationRepository, org.mockito.Mockito.atLeast(2)).saveAndFlush(any());
     }
 }

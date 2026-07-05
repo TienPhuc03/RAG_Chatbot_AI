@@ -12,13 +12,19 @@ import {
   uploadChatAttachment,
 } from "../services/chatService";
 
+function normalizeCitations(citations) {
+  return Array.isArray(citations) ? citations : [];
+}
+
 function toUiMessage(message) {
+  const citations = normalizeCitations(message.citations);
   return {
     id: message.messageId || `${message.role}-${message.createdAt}`,
     role: message.role,
     content: message.content,
     createdAt: message.createdAt,
-    groundedInDocuments: false,
+    groundedInDocuments: Boolean(message.groundedInDocuments || citations.length > 0),
+    citations,
   };
 }
 
@@ -172,6 +178,7 @@ function ChatPage() {
         content: trimmedPrompt,
         createdAt: new Date().toISOString(),
         groundedInDocuments: false,
+        citations: [],
       };
 
       setComposerValue("");
@@ -189,7 +196,11 @@ function ChatPage() {
         role: "ASSISTANT",
         content: response.answer,
         createdAt: new Date().toISOString(),
-        groundedInDocuments: response.groundedInDocuments,
+        groundedInDocuments: Boolean(
+          response.groundedInDocuments ||
+            normalizeCitations(response.citations).length > 0
+        ),
+        citations: normalizeCitations(response.citations),
       };
 
       setMessages((current) => [...current, assistantMessage]);
@@ -257,6 +268,7 @@ function ChatPage() {
                   role: "ERROR",
                   content: error,
                   createdAt: new Date().toISOString(),
+                  citations: [],
                 }}
               />
             ) : null}

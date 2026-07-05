@@ -1,0 +1,8 @@
+﻿{
+  "question": "RAG là gì?",
+  "answer": "RAG là kỹ thuật kết hợp truy xuất tài liệu với mô hình ngôn ngữ để trả lời dựa trên nguồn dữ liệu đã cung cấp.",
+  "groundTruth": "RAG là phương pháp Retrieval-Augmented Generation, dùng truy xuất tài liệu liên quan rồi đưa vào mô hình sinh câu trả lời.",
+  "contexts": [
+    "Retrieval-Augmented Generation là kỹ thuật kết hợp retrieval và generation. Hệ thống truy xuất các đoạn tài liệu liên quan rồi dùng LLM tạo câu trả lời dựa trên các đoạn đó."
+  ]
+}

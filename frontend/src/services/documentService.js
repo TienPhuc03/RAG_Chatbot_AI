@@ -13,6 +13,12 @@ export function fetchDocumentChunks(documentId) {
   return request(`/api/documents/${documentId}/chunks`);
 }
 
+export function deleteDocument(documentId) {
+  return request(`/api/documents/${documentId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function uploadDocument(payload) {
   const formData = new FormData();
   formData.append("file", payload.file);
@@ -21,6 +27,9 @@ export async function uploadDocument(payload) {
   formData.append("chapterCode", payload.chapterCode || "");
   formData.append("chapterTitle", payload.chapterTitle || "");
   formData.append("chunkingStrategy", payload.chunkingStrategy);
+  if (payload.embeddingModel) {
+    formData.append("embeddingModel", payload.embeddingModel);
+  }
 
   const response = await fetch("/api/documents/upload", {
     method: "POST",

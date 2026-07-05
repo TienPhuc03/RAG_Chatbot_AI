@@ -61,7 +61,9 @@ public class RagasEvaluationService implements EvaluationService {
                             response.contextRecall()
                     ),
                     false,
-                    "ragas-service",
+                    "ragas-service:" + normalizeJudgeProviderForSource(response.judgeProvider()),
+                    normalizeJudgeProviderForResponse(response.judgeProvider()),
+                    response.judgeFallbackUsed(),
                     elapsedMillis(startedAt)
             );
         } catch (Exception ex) {
@@ -69,6 +71,8 @@ public class RagasEvaluationService implements EvaluationService {
                     localResult,
                     true,
                     "local-fallback",
+                    "LOCAL",
+                    false,
                     elapsedMillis(startedAt)
             );
         }
@@ -97,10 +101,26 @@ public class RagasEvaluationService implements EvaluationService {
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 
+    private String normalizeJudgeProviderForSource(String judgeProvider) {
+        if (judgeProvider == null || judgeProvider.isBlank()) {
+            return "unknown";
+        }
+        return judgeProvider.trim().toLowerCase();
+    }
+
+    private String normalizeJudgeProviderForResponse(String judgeProvider) {
+        if (judgeProvider == null || judgeProvider.isBlank()) {
+            return "UNKNOWN";
+        }
+        return judgeProvider.trim().toUpperCase();
+    }
+
     public record EvaluationDetails(
             EvaluationResult result,
             boolean fallbackUsed,
             String source,
+            String judgeProvider,
+            boolean judgeFallbackUsed,
             long latencyMs
     ) {
     }
@@ -117,7 +137,9 @@ public class RagasEvaluationService implements EvaluationService {
             double faithfulness,
             double answerRelevancy,
             double contextPrecision,
-            double contextRecall
+            double contextRecall,
+            String judgeProvider,
+            boolean judgeFallbackUsed
     ) {
     }
 }

@@ -23,6 +23,7 @@ public class GetDocumentChunksUseCase {
                         chunk.getPageNumber(),
                         chunk.getTokenCount(),
                         chunk.getChunkingStrategy(),
+                        chunk.getEmbeddingModel(),
                         chunk.getContent()
                 ))
                 .toList();
