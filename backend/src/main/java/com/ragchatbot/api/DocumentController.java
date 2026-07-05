@@ -61,7 +61,7 @@ public class DocumentController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<DocumentUploadResponse> uploadDocument(
-            @Parameter(description = "File PDF, DOCX hoac PPTX can upload")
+            @Parameter(description = "File PDF, DOCX hoặc PPTX cần upload")
             @RequestParam("file") MultipartFile file,
             @RequestParam String courseCode,
             @RequestParam String courseName,
