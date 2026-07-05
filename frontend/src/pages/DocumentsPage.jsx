@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import SectionIntro from "../components/SectionIntro";
 import {
+  deleteDocument,
   fetchDocumentChunks,
   fetchDocuments,
   fetchDocumentStatus,
@@ -8,6 +9,12 @@ import {
 } from "../services/documentService";
 
 const STRATEGIES = ["FIXED_SIZE", "HIERARCHICAL", "SEMANTIC"];
+const EMBEDDING_MODELS = [
+  "GEMINI_EMBEDDING_001",
+  "MULTILINGUAL_E5_BASE",
+  "PHOBERT_BASE",
+  "BGE_M3",
+];
 
 function DocumentsPage() {
   const [courseCode, setCourseCode] = useState("");
@@ -15,6 +22,7 @@ function DocumentsPage() {
   const [chapterCode, setChapterCode] = useState("");
   const [chapterTitle, setChapterTitle] = useState("");
   const [chunkingStrategy, setChunkingStrategy] = useState("SEMANTIC");
+  const [embeddingModel, setEmbeddingModel] = useState("GEMINI_EMBEDDING_001");
   const [file, setFile] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [selectedChunks, setSelectedChunks] = useState([]);
@@ -66,6 +74,7 @@ function DocumentsPage() {
         chapterCode,
         chapterTitle,
         chunkingStrategy,
+        embeddingModel,
       });
 
       setMessage(`Da nhan file: ${response.title}. Dang cho index...`);
@@ -102,12 +111,31 @@ function DocumentsPage() {
     }
   }
 
+  async function handleDeleteDocument(documentId) {
+    const confirmed = window.confirm("Xoa tai lieu nay khoi danh sach va vector index?");
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteDocument(documentId);
+      if (selectedDocumentId === documentId) {
+        setSelectedDocumentId("");
+        setSelectedChunks([]);
+      }
+      setMessage("Da xoa tai lieu.");
+      await loadDocuments(courseCode.trim());
+    } catch (error) {
+      setMessage(error.message || "Khong xoa duoc tai lieu.");
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <SectionIntro
         eyebrow="Research Flow"
         title="Documents"
-        description="Upload tai lieu, chon chien luoc chunking va kiem tra chunk preview ngay tren giao dien."
+        description="Upload tai lieu, chon chunking + embedding model, va giu cung mot corpus cho moi cau hinh benchmark."
       />
 
       <form
@@ -169,6 +197,20 @@ function DocumentsPage() {
             ))}
           </select>
         </label>
+        <label className="text-sm text-text-secondary">
+          Embedding model
+          <select
+            value={embeddingModel}
+            onChange={(event) => setEmbeddingModel(event.target.value)}
+            className="mt-2 h-11 w-full rounded-2xl border border-border-subtle px-4"
+          >
+            {EMBEDDING_MODELS.map((model) => (
+              <option key={model} value={model}>
+                {model}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="flex flex-wrap gap-3 lg:col-span-3">
           <button
             type="submit"
@@ -210,6 +252,7 @@ function DocumentsPage() {
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Reason</th>
                   <th className="px-4 py-3">Strategy</th>
+                  <th className="px-4 py-3">Embedding</th>
                   <th className="px-4 py-3">Chunks</th>
                   <th className="px-4 py-3">Action</th>
                 </tr>
@@ -225,8 +268,10 @@ function DocumentsPage() {
                       {document.failureReason || "-"}
                     </td>
                     <td className="px-4 py-3">{document.latestChunkingStrategy || "-"}</td>
+                    <td className="px-4 py-3">{document.embeddingModel || "-"}</td>
                     <td className="px-4 py-3">{document.chunkCount ?? 0}</td>
                     <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={() => handlePreviewChunks(document.id)}
@@ -234,12 +279,20 @@ function DocumentsPage() {
                       >
                         Xem chunk
                       </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDocument(document.id)}
+                          className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-600"
+                        >
+                          Xoa
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
                 {documents.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="px-4 py-4 text-text-secondary">
+                    <td colSpan="9" className="px-4 py-4 text-text-secondary">
                       Chua co tai lieu nao.
                     </td>
                   </tr>

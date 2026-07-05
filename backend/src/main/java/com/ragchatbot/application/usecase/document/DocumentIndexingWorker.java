@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.ragchatbot.config.EmbeddingProperties;
 import com.ragchatbot.domain.enums.ChunkingStrategy;
 import com.ragchatbot.domain.enums.DocumentStatus;
 import com.ragchatbot.domain.enums.EmbeddingModel;
@@ -19,10 +20,10 @@ import com.ragchatbot.domain.model.Document;
 import com.ragchatbot.domain.port.ChunkDraft;
 import com.ragchatbot.domain.port.ChunkingOptions;
 import com.ragchatbot.domain.port.DocumentParserService;
-import com.ragchatbot.domain.port.EmbeddingService;
 import com.ragchatbot.domain.port.ParsedDocument;
 import com.ragchatbot.domain.port.VectorStoreService;
 import com.ragchatbot.infrastructure.chunking.ChunkingServiceFactory;
+import com.ragchatbot.infrastructure.embedding.EmbeddingRouter;
 import com.ragchatbot.infrastructure.persistence.ChunkRepository;
 import com.ragchatbot.infrastructure.persistence.DocumentRepository;
 
@@ -37,7 +38,8 @@ public class DocumentIndexingWorker {
     private final ChunkRepository chunkRepository;
     private final DocumentParserService documentParserService;
     private final ChunkingServiceFactory chunkingServiceFactory;
-    private final EmbeddingService embeddingService;
+    private final EmbeddingRouter embeddingRouter;
+    private final EmbeddingProperties embeddingProperties;
     private final VectorStoreService vectorStoreService;
 
     public DocumentIndexingWorker(
@@ -45,20 +47,25 @@ public class DocumentIndexingWorker {
             ChunkRepository chunkRepository,
             DocumentParserService documentParserService,
             ChunkingServiceFactory chunkingServiceFactory,
-            EmbeddingService embeddingService,
+            EmbeddingRouter embeddingRouter,
+            EmbeddingProperties embeddingProperties,
             VectorStoreService vectorStoreService
     ) {
         this.documentRepository = documentRepository;
         this.chunkRepository = chunkRepository;
         this.documentParserService = documentParserService;
         this.chunkingServiceFactory = chunkingServiceFactory;
-        this.embeddingService = embeddingService;
+        this.embeddingRouter = embeddingRouter;
+        this.embeddingProperties = embeddingProperties;
         this.vectorStoreService = vectorStoreService;
     }
 
     @Async("applicationTaskExecutor")
     public void process(DocumentUploadJob job) {
         boolean vectorsUpserted = false;
+        EmbeddingModel embeddingModel = job.embeddingModel() == null
+                ? embeddingProperties.getDefaultModel()
+                : job.embeddingModel();
         try {
             Document document = documentRepository.findById(job.documentId())
                     .orElseThrow(() -> new IllegalStateException("Document not found: " + job.documentId()));
@@ -100,12 +107,10 @@ public class DocumentIndexingWorker {
             List<String> chunkTexts = drafts.stream()
                     .map(ChunkDraft::content)
                     .toList();
-            List<List<Float>> embeddings = embeddingService.embedAll(chunkTexts);
+            List<List<Float>> embeddings = embeddingRouter.embedAll(embeddingModel, chunkTexts);
 
-            vectorStoreService.upsert(document.getId(), drafts, embeddings);
+            vectorStoreService.upsert(document.getId(), embeddingModel, chunkingStrategy, drafts, embeddings);
             vectorsUpserted = true;
-
-            EmbeddingModel embeddingModel = embeddingService.supportedModel();
             List<Chunk> chunks = new ArrayList<>(drafts.size());
             for (ChunkDraft draft : drafts) {
                 UUID chunkId = chunkId(document.getId(), draft.chunkIndex());
@@ -131,7 +136,7 @@ public class DocumentIndexingWorker {
             documentRepository.saveAndFlush(document);
         } catch (Exception ex) {
             log.error("Failed to index document {}", job.documentId(), ex);
-            handleFailure(job.documentId(), ex.getMessage(), vectorsUpserted);
+            handleFailure(job.documentId(), embeddingModel, ex.getMessage(), vectorsUpserted);
         }
     }
 
@@ -147,7 +152,7 @@ public class DocumentIndexingWorker {
         return job.chunkingStrategy();
     }
 
-    private void handleFailure(UUID documentId, String failureReason, boolean vectorsUpserted) {
+    private void handleFailure(UUID documentId, EmbeddingModel embeddingModel, String failureReason, boolean vectorsUpserted) {
         try {
             documentRepository.findById(documentId).ifPresent(document -> {
                 document.setStatus(DocumentStatus.FAILED);
@@ -160,7 +165,7 @@ public class DocumentIndexingWorker {
 
         if (vectorsUpserted) {
             try {
-                vectorStoreService.deleteByDocumentId(documentId);
+                vectorStoreService.deleteByDocumentId(documentId, embeddingModel);
             } catch (Exception ex) {
                 log.warn("Failed to clean Qdrant vectors for document {}", documentId, ex);
             }

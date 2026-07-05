@@ -1,12 +1,12 @@
 package com.ragchatbot.application.dto.chat;
 
-/**
- * Response trả về từ chatbot.
- */
+import java.util.List;
+
 public record ChatResponse(
-        String conversationId,      //id thật trong db, backend
-        String sessionId,           //id public cho frontend
+        String conversationId,
+        String sessionId,
         String answer,
-        boolean groundedInDocuments
+        boolean groundedInDocuments,
+        List<ChatCitationDto> citations
 ) {
 }

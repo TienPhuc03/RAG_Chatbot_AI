@@ -1,17 +1,24 @@
-# ── Web framework ──────────────────────────────────────────────────────────────
+# fastapi==0.115.12
+# uvicorn[standard]==0.34.2
+# ragas==0.2.15
+# google-genai>=1.10.0
+# langchain-google-genai>=2.0.0
+# langchain-ollama>=0.2.0
+# langchain-community>=0.3.0,<0.4.0
+# google-cloud-aiplatform>=1.70.0
+# datasets>=2.20.0
+# litellm
 fastapi==0.115.12
 uvicorn[standard]==0.34.2
 
-# ── RAGAS core (LLM-as-judge evaluation framework) ────────────────────────────
-# Phiên bản 0.2.x dùng SingleTurnSample + single_turn_ascore API
 ragas==0.2.15
 
-# ── Google Gemini — LLM judge backend ─────────────────────────────────────────
-google-genai>=1.10.0
+google-genai==1.10.0
+langchain-google-genai==2.0.10
+langchain-ollama==0.2.3
+langchain-community==0.3.20
+google-cloud-aiplatform==1.70.0
 
-# ── LangChain Google adapter (fallback nếu google-genai trực tiếp không work) ──
-langchain-google-genai>=2.0.0
-
-# ── Datasets (ragas dùng huggingface datasets internally) ─────────────────────
-datasets>=2.20.0
-litellm
+datasets==2.20.0
+litellm==1.63.14
+requests==2.32.3

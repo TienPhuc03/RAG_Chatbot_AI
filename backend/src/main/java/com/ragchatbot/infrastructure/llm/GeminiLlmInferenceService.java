@@ -71,8 +71,8 @@ public class GeminiLlmInferenceService implements LlmInferenceService {
         String prompt = buildPrompt(question, conversationHistory, retrievedContexts);
         try {
             String answer = geminiApiClient.generateContent(geminiProperties.getChatModel(), prompt);
-            List<String> citations = retrievedContexts.stream()
-                    .map(context -> context.documentId() + ":" + context.chunkId())
+            List<com.ragchatbot.domain.port.CitationReference> citations = retrievedContexts.stream()
+                    .map(RetrievedContext::toCitationReference)
                     .toList();
 
             return new LlmAnswer(answer, citations, !retrievedContexts.isEmpty());

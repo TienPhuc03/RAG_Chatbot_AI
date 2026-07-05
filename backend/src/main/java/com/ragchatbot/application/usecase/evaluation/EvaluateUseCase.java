@@ -49,6 +49,8 @@ public class EvaluateUseCase {
         result.setAnswerRelevancy(details.result().answerRelevancy());
         result.setContextPrecision(details.result().contextPrecision());
         result.setContextRecall(details.result().contextRecall());
+        result.setEvaluationSource(details.source());
+        result.setEvaluationFallbackUsed(details.fallbackUsed());
         result.setLatencyMs(details.latencyMs());
         result.setCostUsd(BigDecimal.ZERO);
 
@@ -57,6 +59,7 @@ public class EvaluateUseCase {
                 saved.getId(),
                 details.fallbackUsed(),
                 details.source(),
+                details.judgeProvider(),
                 details.latencyMs(),
                 details.result().exactMatch(),
                 details.result().f1(),
@@ -85,6 +88,14 @@ public class EvaluateUseCase {
         if (!StringUtils.hasText(value)) {
             return EmbeddingModel.GEMINI_EMBEDDING_001;
         }
-        return EmbeddingModel.valueOf(value.trim().toUpperCase());
+        EmbeddingModel embeddingModel = EmbeddingModel.valueOf(value.trim().toUpperCase());
+        if (!embeddingModel.isAllowedForNewRequests()) {
+            throw new IllegalArgumentException(
+                    "Embedding model "
+                            + embeddingModel
+                            + " da ngung ho tro cho request moi."
+            );
+        }
+        return embeddingModel;
     }
 }

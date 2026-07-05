@@ -124,6 +124,8 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
         benchmarkResult.setAnswerRelevancy(0.88);
         benchmarkResult.setContextPrecision(0.86);
         benchmarkResult.setContextRecall(0.84);
+        benchmarkResult.setEvaluationSource("ragas-service:gemini");
+        benchmarkResult.setEvaluationFallbackUsed(false);
         benchmarkResult.setLatencyMs(1234L);
         benchmarkResult.setCostUsd(new BigDecimal("0.0123"));
 
@@ -131,6 +133,61 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
 
         assertThat(savedResult.getId()).isNotNull();
         assertThat(benchmarkResultRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void aggregatesBenchmarkSummaryIncludingFallbackAndRetrievalRate() {
+        BenchmarkResult first = new BenchmarkResult();
+        first.setExperimentType(ExperimentType.RAG);
+        first.setChunkingStrategy(ChunkingStrategy.SEMANTIC);
+        first.setEmbeddingModel(EmbeddingModel.BGE_M3);
+        first.setQuestion("Q1");
+        first.setGroundTruth("A1");
+        first.setGeneratedAnswer("A1");
+        first.setExactMatch(1.0);
+        first.setF1Score(1.0);
+        first.setFaithfulness(0.9);
+        first.setAnswerRelevancy(0.8);
+        first.setContextPrecision(0.7);
+        first.setContextRecall(0.6);
+        first.setRetrievalHit(true);
+        first.setEvaluationSource("ragas-service:gemini");
+        first.setEvaluationFallbackUsed(false);
+        first.setLatencyMs(100L);
+        first.setCostUsd(new BigDecimal("0.0100"));
+
+        BenchmarkResult second = new BenchmarkResult();
+        second.setExperimentType(ExperimentType.RAG);
+        second.setChunkingStrategy(ChunkingStrategy.SEMANTIC);
+        second.setEmbeddingModel(EmbeddingModel.BGE_M3);
+        second.setQuestion("Q2");
+        second.setGroundTruth("A2");
+        second.setGeneratedAnswer("A2");
+        second.setExactMatch(0.0);
+        second.setF1Score(0.5);
+        second.setFaithfulness(0.4);
+        second.setAnswerRelevancy(0.5);
+        second.setContextPrecision(0.6);
+        second.setContextRecall(0.7);
+        second.setRetrievalHit(false);
+        second.setEvaluationSource("local-fallback");
+        second.setEvaluationFallbackUsed(true);
+        second.setLatencyMs(300L);
+        second.setCostUsd(new BigDecimal("0.0300"));
+
+        benchmarkResultRepository.saveAllAndFlush(List.of(first, second));
+
+        var summaries = benchmarkResultRepository.findAverageMetricsByStrategyAndModel();
+
+        assertThat(summaries).hasSize(1);
+        assertThat(summaries.getFirst().chunkingStrategy()).isEqualTo("SEMANTIC");
+        assertThat(summaries.getFirst().embeddingModel()).isEqualTo("BGE_M3");
+        assertThat(summaries.getFirst().runCount()).isEqualTo(2);
+        assertThat(summaries.getFirst().fallbackRunCount()).isEqualTo(1);
+        assertThat(summaries.getFirst().ragasRunCount()).isEqualTo(1);
+        assertThat(summaries.getFirst().geminiJudgeRunCount()).isEqualTo(1);
+        assertThat(summaries.getFirst().ollamaJudgeRunCount()).isEqualTo(0);
+        assertThat(summaries.getFirst().retrievalHitRate()).isEqualTo(0.5);
     }
 
     @Test

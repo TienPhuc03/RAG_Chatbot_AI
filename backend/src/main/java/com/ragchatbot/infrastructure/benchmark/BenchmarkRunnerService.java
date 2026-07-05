@@ -5,52 +5,59 @@ import com.ragchatbot.domain.enums.ChunkingStrategy;
 import com.ragchatbot.domain.enums.EmbeddingModel;
 import com.ragchatbot.domain.enums.ExperimentType;
 import com.ragchatbot.domain.model.BenchmarkResult;
-import com.ragchatbot.domain.model.EvaluationResult;
 import com.ragchatbot.domain.model.TestCase;
-import com.ragchatbot.domain.port.EmbeddingService;
-import com.ragchatbot.domain.port.EvaluationService;
+import com.ragchatbot.domain.port.FineTunedInferenceService;
 import com.ragchatbot.domain.port.LlmAnswer;
 import com.ragchatbot.domain.port.LlmInferenceService;
 import com.ragchatbot.domain.port.RetrievedContext;
 import com.ragchatbot.domain.port.VectorStoreService;
+import com.ragchatbot.infrastructure.embedding.EmbeddingRouter;
 import com.ragchatbot.infrastructure.persistence.BenchmarkResultRepository;
-import java.util.Collections;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 public class BenchmarkRunnerService {
 
     private final TestSetLoader testSetLoader;
-    private final EvaluationService evaluationService;
+    private final RagasEvaluationService evaluationService;
     private final VectorStoreService vectorStoreService;
     private final LlmInferenceService llmInferenceService;
-    private final EmbeddingService embeddingService;
+    private final FineTunedInferenceService fineTunedInferenceService;
+    private final EmbeddingRouter embeddingRouter;
     private final BenchmarkResultRepository benchmarkResultRepository;
     private final BenchmarkJobRegistry benchmarkJobRegistry;
     private final DocumentMaintenanceService documentMaintenanceService;
+    private final BenchmarkCostEstimator benchmarkCostEstimator;
 
     public BenchmarkRunnerService(
             TestSetLoader testSetLoader,
-            EvaluationService evaluationService,
+            RagasEvaluationService evaluationService,
             VectorStoreService vectorStoreService,
             LlmInferenceService llmInferenceService,
-            EmbeddingService embeddingService,
+            FineTunedInferenceService fineTunedInferenceService,
+            EmbeddingRouter embeddingRouter,
             BenchmarkResultRepository benchmarkResultRepository,
             BenchmarkJobRegistry benchmarkJobRegistry,
-            DocumentMaintenanceService documentMaintenanceService
+            DocumentMaintenanceService documentMaintenanceService,
+            BenchmarkCostEstimator benchmarkCostEstimator
     ) {
         this.testSetLoader = testSetLoader;
         this.evaluationService = evaluationService;
         this.vectorStoreService = vectorStoreService;
         this.llmInferenceService = llmInferenceService;
-        this.embeddingService = embeddingService;
+        this.fineTunedInferenceService = fineTunedInferenceService;
+        this.embeddingRouter = embeddingRouter;
         this.benchmarkResultRepository = benchmarkResultRepository;
         this.benchmarkJobRegistry = benchmarkJobRegistry;
         this.documentMaintenanceService = documentMaintenanceService;
+        this.benchmarkCostEstimator = benchmarkCostEstimator;
     }
 
     @Async
@@ -61,9 +68,16 @@ public class BenchmarkRunnerService {
         try {
             documentMaintenanceService.reconcileStaleProcessingDocuments();
             ExperimentType experimentType = ExperimentType.valueOf(config.experimentType());
-            if (experimentType == ExperimentType.RAG && !documentMaintenanceService.hasIndexedDocuments(null, null)) {
+            ChunkingStrategy chunkingStrategy = parseChunkingStrategy(config.strategy());
+            EmbeddingModel embeddingModel = parseEmbeddingModel(config.embeddingModel());
+            if (experimentType == ExperimentType.RAG
+                    && !documentMaintenanceService.hasIndexedDocumentsForBenchmark(chunkingStrategy, embeddingModel)) {
                 throw new IllegalStateException(
-                        "Khong co tai lieu INDEXED de chay benchmark RAG. Hay upload DOCX hoac PDF co text truoc."
+                        "Khong co tai lieu INDEXED cho benchmark config "
+                                + chunkingStrategy
+                                + " + "
+                                + embeddingModel
+                                + ". Hay upload va index cung mot corpus voi dung strategy va embedding model nay truoc."
                 );
             }
 
@@ -71,46 +85,78 @@ public class BenchmarkRunnerService {
                 TestCase testCase = testCases.get(i);
                 List<RetrievedContext> retrievedContexts = Collections.emptyList();
                 boolean retrievalHit = false;
+                String generatedAnswer;
+                long latencyMs;
+                BigDecimal costUsd;
 
                 if (experimentType == ExperimentType.RAG) {
-                    List<Float> questionEmbedding = embeddingService.embed(testCase.question());
-                    retrievedContexts = vectorStoreService.search(questionEmbedding, 5, null, null, null);
+                    long startedAt = System.nanoTime();
+                    List<Float> questionEmbedding = embeddingRouter.embed(
+                            embeddingModel,
+                            testCase.question()
+                    );
+                    retrievedContexts = vectorStoreService.search(
+                            embeddingModel,
+                            questionEmbedding,
+                            5,
+                            chunkingStrategy,
+                            null,
+                            null,
+                            null
+                    );
                     retrievalHit = computeRetrievalHit(testCase.groundTruth(), retrievedContexts);
+                    LlmAnswer llmAnswer = llmInferenceService.generateAnswer(
+                            testCase.question(),
+                            new ArrayList<>(),
+                            retrievedContexts
+                    );
+                    generatedAnswer = llmAnswer.answer();
+                    latencyMs = elapsedMillis(startedAt);
+                    costUsd = benchmarkCostEstimator.estimateRagCost(
+                            embeddingModel,
+                            testCase.question(),
+                            retrievedContexts,
+                            generatedAnswer
+                    );
+                } else {
+                    long startedAt = System.nanoTime();
+                    generatedAnswer = fineTunedInferenceService.generateAnswer(testCase.question());
+                    latencyMs = elapsedMillis(startedAt);
+                    costUsd = benchmarkCostEstimator.estimateFineTuneCost(
+                            testCase.question(),
+                            generatedAnswer
+                    );
                 }
-
-                LlmAnswer llmAnswer = llmInferenceService.generateAnswer(
-                        testCase.question(),
-                        new ArrayList<>(),
-                        retrievedContexts
-                );
 
                 List<String> contextsForEvaluation = retrievedContexts.stream()
                         .map(RetrievedContext::content)
                         .toList();
 
-                EvaluationResult evaluationResult = evaluationService.evaluate(
+                RagasEvaluationService.EvaluationDetails evaluationDetails = evaluationService.evaluateDetailed(
                         testCase.question(),
                         testCase.groundTruth(),
-                        llmAnswer.answer(),
+                        generatedAnswer,
                         contextsForEvaluation
                 );
 
                 BenchmarkResult benchmarkResult = new BenchmarkResult();
                 benchmarkResult.setExperimentType(experimentType);
-                benchmarkResult.setChunkingStrategy(ChunkingStrategy.valueOf(config.strategy()));
-                benchmarkResult.setEmbeddingModel(EmbeddingModel.valueOf(config.embeddingModel()));
+                benchmarkResult.setChunkingStrategy(experimentType == ExperimentType.RAG ? chunkingStrategy : null);
+                benchmarkResult.setEmbeddingModel(experimentType == ExperimentType.RAG ? embeddingModel : null);
                 benchmarkResult.setQuestion(testCase.question());
                 benchmarkResult.setGroundTruth(testCase.groundTruth());
-                benchmarkResult.setGeneratedAnswer(llmAnswer.answer());
-                benchmarkResult.setExactMatch(evaluationResult.exactMatch());
-                benchmarkResult.setF1Score(evaluationResult.f1());
-                benchmarkResult.setFaithfulness(evaluationResult.faithfulness());
-                benchmarkResult.setAnswerRelevancy(evaluationResult.answerRelevancy());
-                benchmarkResult.setContextPrecision(evaluationResult.contextPrecision());
-                benchmarkResult.setContextRecall(evaluationResult.contextRecall());
+                benchmarkResult.setGeneratedAnswer(generatedAnswer);
+                benchmarkResult.setExactMatch(evaluationDetails.result().exactMatch());
+                benchmarkResult.setF1Score(evaluationDetails.result().f1());
+                benchmarkResult.setFaithfulness(evaluationDetails.result().faithfulness());
+                benchmarkResult.setAnswerRelevancy(evaluationDetails.result().answerRelevancy());
+                benchmarkResult.setContextPrecision(evaluationDetails.result().contextPrecision());
+                benchmarkResult.setContextRecall(evaluationDetails.result().contextRecall());
                 benchmarkResult.setRetrievalHit(retrievalHit);
-                benchmarkResult.setLatencyMs(0L);
-                benchmarkResult.setCostUsd(BigDecimal.ZERO);
+                benchmarkResult.setEvaluationSource(evaluationDetails.source());
+                benchmarkResult.setEvaluationFallbackUsed(evaluationDetails.fallbackUsed());
+                benchmarkResult.setLatencyMs(latencyMs);
+                benchmarkResult.setCostUsd(costUsd);
 
                 benchmarkResultRepository.save(benchmarkResult);
                 benchmarkJobRegistry.updateProgress(jobId, i + 1);
@@ -120,6 +166,28 @@ public class BenchmarkRunnerService {
         } catch (Exception ex) {
             benchmarkJobRegistry.markFailed(jobId, simplifyErrorMessage(ex));
         }
+    }
+
+    private EmbeddingModel parseEmbeddingModel(String value) {
+        if (!StringUtils.hasText(value)) {
+            return EmbeddingModel.GEMINI_EMBEDDING_001;
+        }
+        EmbeddingModel embeddingModel = EmbeddingModel.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        if (!embeddingModel.isAllowedForNewRequests()) {
+            throw new IllegalArgumentException(
+                    "Embedding model "
+                            + embeddingModel
+                            + " da ngung ho tro cho benchmark moi."
+            );
+        }
+        return embeddingModel;
+    }
+
+    private ChunkingStrategy parseChunkingStrategy(String value) {
+        if (!StringUtils.hasText(value)) {
+            return ChunkingStrategy.SEMANTIC;
+        }
+        return ChunkingStrategy.valueOf(value.trim().toUpperCase(Locale.ROOT));
     }
 
     private String simplifyErrorMessage(Exception ex) {
@@ -149,6 +217,10 @@ public class BenchmarkRunnerService {
                 .anyMatch(content ->
                         content.contains(normalizedGroundTruth) || normalizedGroundTruth.contains(content)
                 );
+    }
+
+    private long elapsedMillis(long startedAtNanos) {
+        return Math.max(0L, (System.nanoTime() - startedAtNanos) / 1_000_000L);
     }
 
     public record BenchmarkConfig(

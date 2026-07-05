@@ -22,11 +22,17 @@ public record BenchmarkSummaryDto(
         String embeddingModel,
         String experimentType,
         long runCount,
+        long fallbackRunCount,
+        long ragasRunCount,
+        long geminiJudgeRunCount,
+        long ollamaJudgeRunCount,
         Double avgExactMatch,
         Double avgF1Score,
         Double avgFaithfulness,
         Double avgAnswerRelevancy,
         Double avgContextPrecision,
         Double avgContextRecall,
-        Double avgLatencyMs
+        Double retrievalHitRate,
+        Double avgLatencyMs,
+        Double avgCostUsd
 ) {}

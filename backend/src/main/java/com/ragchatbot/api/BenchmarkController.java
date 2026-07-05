@@ -119,8 +119,8 @@ public class BenchmarkController {
 
             @NotBlank(message = "embeddingModel khong duoc de trong")
             @Pattern(
-                    regexp = "MULTILINGUAL_E5_BASE|TEXT_EMBEDDING_3_SMALL|PHOBERT_BASE|BGE_M3|GEMINI_EMBEDDING_001",
-                    message = "embeddingModel khong hop le"
+                    regexp = "MULTILINGUAL_E5_BASE|PHOBERT_BASE|BGE_M3|GEMINI_EMBEDDING_001",
+                    message = "embeddingModel phai la GEMINI_EMBEDDING_001, MULTILINGUAL_E5_BASE, PHOBERT_BASE hoac BGE_M3"
             )
             String embeddingModel,
 

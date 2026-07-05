@@ -3,6 +3,7 @@ package com.ragchatbot.application.usecase.document;
 import java.util.UUID;
 
 import com.ragchatbot.domain.enums.ChunkingStrategy;
+import com.ragchatbot.domain.enums.EmbeddingModel;
 
 public record DocumentUploadJob(
         UUID documentId,
@@ -15,5 +16,6 @@ public record DocumentUploadJob(
         String chapterTitle,
         String conversationSessionId,
         String checksum,
-        ChunkingStrategy chunkingStrategy
+        ChunkingStrategy chunkingStrategy,
+        EmbeddingModel embeddingModel
 ) {}

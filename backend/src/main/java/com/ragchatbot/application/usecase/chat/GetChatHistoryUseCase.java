@@ -12,13 +12,16 @@ public class GetChatHistoryUseCase {
 
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
+    private final ChatCitationPayloadCodec citationPayloadCodec;
 
     public GetChatHistoryUseCase(
             ConversationRepository conversationRepository,
-            MessageRepository messageRepository
+            MessageRepository messageRepository,
+            ChatCitationPayloadCodec citationPayloadCodec
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
+        this.citationPayloadCodec = citationPayloadCodec;
     }
 
     /**
@@ -35,13 +38,18 @@ public class GetChatHistoryUseCase {
                         conversation.getId()
                 )
                 .stream()
-                .map(message -> new ChatHistoryMessageDto(
-                        message.getId(),
-                        message.getRole(),
-                        message.getContent(),
-                        message.getCreatedAt(),
-                        message.getCitationPayload()
-                ))
+                .map(message -> {
+                    var citations = citationPayloadCodec.deserialize(message.getCitationPayload());
+                    return new ChatHistoryMessageDto(
+                            message.getId(),
+                            message.getRole(),
+                            message.getContent(),
+                            message.getCreatedAt(),
+                            !citations.isEmpty(),
+                            message.getCitationPayload(),
+                            citations
+                    );
+                })
                 .toList();
     }
 }
