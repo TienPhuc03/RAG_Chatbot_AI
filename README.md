@@ -257,7 +257,7 @@ cd finetune-service
 python prepare_dataset.py
 python train_qlora.py --data_path train_data.jsonl --output_dir ../uth_lora_adapter
 ```
-| Gia Quyền | Benchmark & Evaluation Engineer |
+
 
 ---
 
