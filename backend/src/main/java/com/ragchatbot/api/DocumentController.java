@@ -8,7 +8,9 @@ import com.ragchatbot.application.usecase.document.GetDocumentChunksUseCase;
 import com.ragchatbot.application.usecase.document.GetDocumentStatusUseCase;
 import com.ragchatbot.application.usecase.document.GetDocumentsUseCase;
 import com.ragchatbot.application.usecase.document.UploadDocumentUseCase;
+import com.ragchatbot.application.usecase.document.DeleteDocumentUseCase;
 import com.ragchatbot.domain.enums.ChunkingStrategy;
+import com.ragchatbot.domain.enums.EmbeddingModel;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 
 @RestController
 @RequestMapping("/api/documents")
@@ -33,17 +36,20 @@ public class DocumentController {
     private final GetDocumentsUseCase getDocumentsUseCase;
     private final GetDocumentStatusUseCase getDocumentStatusUseCase;
     private final GetDocumentChunksUseCase getDocumentChunksUseCase;
+    private final DeleteDocumentUseCase deleteDocumentUseCase;
 
     public DocumentController(
             UploadDocumentUseCase uploadDocumentUseCase,
             GetDocumentsUseCase getDocumentsUseCase,
             GetDocumentStatusUseCase getDocumentStatusUseCase,
-            GetDocumentChunksUseCase getDocumentChunksUseCase
+            GetDocumentChunksUseCase getDocumentChunksUseCase,
+            DeleteDocumentUseCase deleteDocumentUseCase
     ) {
         this.uploadDocumentUseCase = uploadDocumentUseCase;
         this.getDocumentsUseCase = getDocumentsUseCase;
         this.getDocumentStatusUseCase = getDocumentStatusUseCase;
         this.getDocumentChunksUseCase = getDocumentChunksUseCase;
+        this.deleteDocumentUseCase = deleteDocumentUseCase;
     }
 
     @Operation(summary = "Upload document")
@@ -51,7 +57,9 @@ public class DocumentController {
             @ApiResponse(responseCode = "202", description = "Upload accepted"),
             @ApiResponse(responseCode = "400", description = "Invalid file")
     })
-    @PostMapping("/upload")
+    @PostMapping(value = "/upload",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     public ResponseEntity<DocumentUploadResponse> uploadDocument(
             @Parameter(description = "File PDF, DOCX hoac PPTX can upload")
             @RequestParam("file") MultipartFile file,
@@ -59,7 +67,8 @@ public class DocumentController {
             @RequestParam String courseName,
             @RequestParam(required = false, defaultValue = "") String chapterCode,
             @RequestParam(required = false, defaultValue = "") String chapterTitle,
-            @RequestParam(required = false, defaultValue = "SEMANTIC") ChunkingStrategy chunkingStrategy
+            @RequestParam(required = false, defaultValue = "SEMANTIC") ChunkingStrategy chunkingStrategy,
+            @RequestParam(required = false) EmbeddingModel embeddingModel
     ) {
         DocumentUploadResponse response = uploadDocumentUseCase.execute(
                 file,
@@ -67,7 +76,8 @@ public class DocumentController {
                 courseName,
                 chapterCode,
                 chapterTitle,
-                chunkingStrategy
+                chunkingStrategy,
+                embeddingModel
         );
         return ResponseEntity.accepted().body(response);
     }
@@ -91,6 +101,7 @@ public class DocumentController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDocument(@PathVariable UUID id) {
+        deleteDocumentUseCase.execute(id);
         return ResponseEntity.noContent().build();
     }
 }

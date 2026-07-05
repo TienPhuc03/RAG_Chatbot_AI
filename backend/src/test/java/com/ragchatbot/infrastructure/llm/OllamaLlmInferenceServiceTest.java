@@ -53,7 +53,9 @@ class OllamaLlmInferenceServiceTest {
                         "Chunking la chia tai lieu thanh doan nho.",
                         0.91,
                         "RAG101",
-                        "CH1"))
+                        "CH1",
+                        "rag-notes.pdf",
+                        4))
         );
 
         assertThat(answer.answer()).isEqualTo("Day la cau tra loi tu Ollama.");

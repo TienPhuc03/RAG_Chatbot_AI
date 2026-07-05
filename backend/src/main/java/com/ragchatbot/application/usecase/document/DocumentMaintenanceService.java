@@ -1,7 +1,10 @@
 package com.ragchatbot.application.usecase.document;
 
 import com.ragchatbot.domain.enums.DocumentStatus;
+import com.ragchatbot.domain.enums.ChunkingStrategy;
+import com.ragchatbot.domain.enums.EmbeddingModel;
 import com.ragchatbot.domain.model.Document;
+import com.ragchatbot.infrastructure.persistence.ChunkRepository;
 import com.ragchatbot.infrastructure.persistence.DocumentRepository;
 import java.time.Duration;
 import java.time.Instant;
@@ -16,9 +19,14 @@ public class DocumentMaintenanceService {
             "Tien trinh index truoc do da bi gian doan. Vui long upload lai tai lieu de index lai.";
 
     private final DocumentRepository documentRepository;
+    private final ChunkRepository chunkRepository;
 
-    public DocumentMaintenanceService(DocumentRepository documentRepository) {
+    public DocumentMaintenanceService(
+            DocumentRepository documentRepository,
+            ChunkRepository chunkRepository
+    ) {
         this.documentRepository = documentRepository;
+        this.chunkRepository = chunkRepository;
     }
 
     public void reconcileStaleProcessingDocuments() {
@@ -66,6 +74,20 @@ public class DocumentMaintenanceService {
         return documentRepository.countByStatusAndConversationSessionId(
                 DocumentStatus.INDEXED,
                 conversationSessionId.trim()
+        ) > 0;
+    }
+
+    public boolean hasIndexedDocumentsForBenchmark(
+            ChunkingStrategy chunkingStrategy,
+            EmbeddingModel embeddingModel
+    ) {
+        if (chunkingStrategy == null || embeddingModel == null) {
+            return false;
+        }
+
+        return chunkRepository.countIndexedPublicDocumentsForBenchmark(
+                chunkingStrategy,
+                embeddingModel
         ) > 0;
     }
 }

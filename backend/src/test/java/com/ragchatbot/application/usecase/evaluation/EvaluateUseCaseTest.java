@@ -32,6 +32,8 @@ class EvaluateUseCaseTest {
                         new EvaluationResult(1.0, 0.8, 0.6, 0.5, 0.4, 0.3),
                         true,
                         "local-fallback",
+                        "LOCAL",
+                        false,
                         123L
                 ));
         when(repository.save(any())).thenAnswer(invocation -> {
@@ -53,6 +55,7 @@ class EvaluateUseCaseTest {
 
         assertThat(response.fallbackUsed()).isTrue();
         assertThat(response.source()).isEqualTo("local-fallback");
+        assertThat(response.judgeProvider()).isEqualTo("LOCAL");
         assertThat(response.exactMatch()).isEqualTo(1.0);
         assertThat(response.f1Score()).isEqualTo(0.8);
         assertThat(response.faithfulness()).isEqualTo(0.6);

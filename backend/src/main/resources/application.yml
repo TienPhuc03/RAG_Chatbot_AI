@@ -40,6 +40,18 @@ management:
         enabled: true
 
 rag:
+  embedding:
+    default-model: ${RAG_EMBEDDING_DEFAULT_MODEL:GEMINI_EMBEDDING_001}
+    provider-mode: ${RAG_EMBEDDING_PROVIDER_MODE:ROUTED}
+    local-service:
+      base-url: ${RAG_EMBEDDING_LOCAL_SERVICE_BASE_URL:http://localhost:8000}
+      timeout: ${RAG_EMBEDDING_LOCAL_SERVICE_TIMEOUT:30s}
+    vector-dimensions:
+      GEMINI_EMBEDDING_001: ${RAG_EMBEDDING_VECTOR_DIMENSIONS_GEMINI_EMBEDDING_001:3072}
+      TEXT_EMBEDDING_3_SMALL: ${RAG_EMBEDDING_VECTOR_DIMENSIONS_TEXT_EMBEDDING_3_SMALL:1536}
+      MULTILINGUAL_E5_BASE: ${RAG_EMBEDDING_VECTOR_DIMENSIONS_MULTILINGUAL_E5_BASE:768}
+      PHOBERT_BASE: ${RAG_EMBEDDING_VECTOR_DIMENSIONS_PHOBERT_BASE:768}
+      BGE_M3: ${RAG_EMBEDDING_VECTOR_DIMENSIONS_BGE_M3:1024}
   vector-store:
     qdrant-host: ${QDRANT_HOST:localhost}
     qdrant-port: ${QDRANT_PORT:6334}
@@ -52,7 +64,12 @@ rag:
   evaluation:
     base-url: ${RAGAS_SERVICE_URL:http://localhost:8002}
     evaluate-path: ${RAGAS_EVALUATE_PATH:/evaluate}
-    request-timeout: ${RAGAS_REQUEST_TIMEOUT:30s}
+    request-timeout: ${RAGAS_REQUEST_TIMEOUT:300s}
+  benchmark:
+    finetune:
+      ollama-base-url: ${BENCHMARK_FINETUNE_OLLAMA_BASE_URL:${OLLAMA_BASE_URL:http://localhost:11434}}
+      ollama-model: ${BENCHMARK_FINETUNE_OLLAMA_MODEL:hoc-phan-chatbot-finetuned}
+      timeout: ${BENCHMARK_FINETUNE_TIMEOUT:120s}
 
 gemini:
   api-key: ${GEMINI_API_KEY:}

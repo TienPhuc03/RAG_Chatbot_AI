@@ -8,6 +8,20 @@ public record RetrievedContext(
         String content,
         Double score,
         String courseCode,
-        String chapterCode
+        String chapterCode,
+        String sourceFileName,
+        Integer pageNumber
 ) {
+
+    public CitationReference toCitationReference() {
+        return new CitationReference(
+                documentId,
+                chunkId,
+                sourceFileName,
+                pageNumber,
+                courseCode,
+                chapterCode,
+                score
+        );
+    }
 }

@@ -86,8 +86,8 @@ public class OllamaLlmInferenceService implements LlmInferenceService {
                     OllamaGenerateResponse.class
             );
 
-            List<String> citations = retrievedContexts.stream()
-                    .map(context -> context.documentId() + ":" + context.chunkId())
+            List<com.ragchatbot.domain.port.CitationReference> citations = retrievedContexts.stream()
+                    .map(RetrievedContext::toCitationReference)
                     .toList();
 
             return new LlmAnswer(result.response(), citations, !retrievedContexts.isEmpty());

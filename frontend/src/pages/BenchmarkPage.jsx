@@ -28,6 +28,8 @@ function BenchmarkPage() {
     loadResults();
   }, []);
 
+  const hasFallbackResults = results.some((item) => (item.fallbackRunCount ?? 0) > 0);
+
   async function handleRunBenchmark(event) {
     event.preventDefault();
     setLoading(true);
@@ -79,6 +81,7 @@ function BenchmarkPage() {
           <select
             value={strategy}
             onChange={(event) => setStrategy(event.target.value)}
+            disabled={experimentType === "FINETUNE"}
             className="mt-2 h-11 w-full rounded-2xl border border-border-subtle px-4"
           >
             <option value="FIXED_SIZE">FIXED_SIZE</option>
@@ -91,6 +94,7 @@ function BenchmarkPage() {
           <select
             value={embeddingModel}
             onChange={(event) => setEmbeddingModel(event.target.value)}
+            disabled={experimentType === "FINETUNE"}
             className="mt-2 h-11 w-full rounded-2xl border border-border-subtle px-4"
           >
             <option value="GEMINI_EMBEDDING_001">GEMINI_EMBEDDING_001</option>
@@ -121,6 +125,12 @@ function BenchmarkPage() {
         </div>
       </form>
 
+      {experimentType === "FINETUNE" ? (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+          FINETUNE benchmark dang bo qua strategy va embedding selection, ket qua se duoc gom duoi nhan N/A.
+        </div>
+      ) : null}
+
       {jobStatus ? (
         <div className="mt-4 rounded-2xl border border-border-subtle bg-white px-5 py-4 text-sm text-text-secondary shadow-soft">
           Job: {jobStatus.jobId} | Status: {jobStatus.status} | Done: {jobStatus.doneCases}/{jobStatus.totalCases}
@@ -131,6 +141,12 @@ function BenchmarkPage() {
       {message ? (
         <div className="mt-4 rounded-2xl border border-border-subtle bg-white px-5 py-4 text-sm text-text-secondary shadow-soft">
           {message}
+        </div>
+      ) : null}
+
+      {hasFallbackResults ? (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+          Co benchmark run da fallback sang local evaluation thay vi ragas-service. Khong nen dung cac run nay lam ket luan chinh trong bao cao.
         </div>
       ) : null}
 
@@ -146,9 +162,16 @@ function BenchmarkPage() {
                 <th className="px-4 py-3">Embedding</th>
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Runs</th>
+                <th className="px-4 py-3">Eval source</th>
+                <th className="px-4 py-3">Exact Match</th>
                 <th className="px-4 py-3">F1</th>
                 <th className="px-4 py-3">Faithfulness</th>
+                <th className="px-4 py-3">Answer Rel.</th>
+                <th className="px-4 py-3">Ctx Precision</th>
+                <th className="px-4 py-3">Ctx Recall</th>
+                <th className="px-4 py-3">Retrieval Hit</th>
                 <th className="px-4 py-3">Latency</th>
+                <th className="px-4 py-3">Cost (USD est.)</th>
               </tr>
             </thead>
             <tbody>
@@ -161,16 +184,37 @@ function BenchmarkPage() {
                   <td className="px-4 py-3">{item.embeddingModel}</td>
                   <td className="px-4 py-3">{item.experimentType}</td>
                   <td className="px-4 py-3">{item.runCount}</td>
+                  <td className="px-4 py-3">
+                    {item.fallbackRunCount > 0
+                      ? `${item.geminiJudgeRunCount} gemini, ${item.ollamaJudgeRunCount} ollama, ${item.fallbackRunCount} local fallback`
+                      : `${item.geminiJudgeRunCount} gemini, ${item.ollamaJudgeRunCount} ollama`}
+                  </td>
+                  <td className="px-4 py-3">{item.avgExactMatch?.toFixed?.(3) ?? item.avgExactMatch}</td>
                   <td className="px-4 py-3">{item.avgF1Score?.toFixed?.(3) ?? item.avgF1Score}</td>
                   <td className="px-4 py-3">
                     {item.avgFaithfulness?.toFixed?.(3) ?? item.avgFaithfulness}
                   </td>
+                  <td className="px-4 py-3">
+                    {item.avgAnswerRelevancy?.toFixed?.(3) ?? item.avgAnswerRelevancy}
+                  </td>
+                  <td className="px-4 py-3">
+                    {item.avgContextPrecision?.toFixed?.(3) ?? item.avgContextPrecision}
+                  </td>
+                  <td className="px-4 py-3">
+                    {item.avgContextRecall?.toFixed?.(3) ?? item.avgContextRecall}
+                  </td>
+                  <td className="px-4 py-3">
+                    {item.retrievalHitRate != null
+                      ? `${(item.retrievalHitRate * 100).toFixed(1)}%`
+                      : "-"}
+                  </td>
                   <td className="px-4 py-3">{item.avgLatencyMs?.toFixed?.(1) ?? item.avgLatencyMs}</td>
+                  <td className="px-4 py-3">{item.avgCostUsd?.toFixed?.(6) ?? item.avgCostUsd}</td>
                 </tr>
               ))}
               {results.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-4 py-4 text-text-secondary">
+                  <td colSpan="14" className="px-4 py-4 text-text-secondary">
                     Chua co ket qua benchmark.
                   </td>
                 </tr>

@@ -9,9 +9,11 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.ragchatbot.config.EmbeddingProperties;
 import com.ragchatbot.application.dto.document.DocumentUploadResponse;
 import com.ragchatbot.domain.enums.ChunkingStrategy;
 import com.ragchatbot.domain.enums.DocumentStatus;
+import com.ragchatbot.domain.enums.EmbeddingModel;
 import com.ragchatbot.domain.model.Document;
 import com.ragchatbot.infrastructure.persistence.DocumentRepository;
 
@@ -20,13 +22,16 @@ public class UploadDocumentUseCase {
 
     private final DocumentIndexingWorker documentIndexingWorker;
     private final DocumentRepository documentRepository;
+    private final EmbeddingProperties embeddingProperties;
 
     public UploadDocumentUseCase(
             DocumentIndexingWorker documentIndexingWorker,
-            DocumentRepository documentRepository
+            DocumentRepository documentRepository,
+            EmbeddingProperties embeddingProperties
     ) {
         this.documentIndexingWorker = documentIndexingWorker;
         this.documentRepository = documentRepository;
+        this.embeddingProperties = embeddingProperties;
     }
 
     public DocumentUploadResponse execute(
@@ -35,7 +40,8 @@ public class UploadDocumentUseCase {
             String courseName,
             String chapterCode,
             String chapterTitle,
-            ChunkingStrategy chunkingStrategy
+            ChunkingStrategy chunkingStrategy,
+            EmbeddingModel embeddingModel
     ) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File must not be empty");
@@ -60,6 +66,10 @@ public class UploadDocumentUseCase {
         }
 
         String checksum = sha256Hex(content);
+        EmbeddingModel resolvedEmbeddingModel = embeddingModel == null
+                ? embeddingProperties.getDefaultModel()
+                : embeddingModel;
+        validateEmbeddingModelForNewRequests(resolvedEmbeddingModel);
 
         Document document = new Document();
         document.setId(UUID.randomUUID());
@@ -86,19 +96,21 @@ public class UploadDocumentUseCase {
                 blankToNull(chapterTitle),
                 null,
                 checksum,
-                chunkingStrategy
+                chunkingStrategy,
+                resolvedEmbeddingModel
         ));
 
-        return toResponse(document);
+        return toResponse(document, resolvedEmbeddingModel);
     }
 
-    private DocumentUploadResponse toResponse(Document document) {
+    private DocumentUploadResponse toResponse(Document document, EmbeddingModel embeddingModel) {
         return new DocumentUploadResponse(
                 document.getId(),
                 document.getTitle(),
                 document.getSourceFileName(),
                 document.getCourseCode(),
-                document.getStatus() == null ? DocumentStatus.PENDING : document.getStatus()
+                document.getStatus() == null ? DocumentStatus.PENDING : document.getStatus(),
+                embeddingModel
         );
     }
 
@@ -129,6 +141,16 @@ public class UploadDocumentUseCase {
             return hex.toString();
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("SHA-256 not available", ex);
+        }
+    }
+
+    private void validateEmbeddingModelForNewRequests(EmbeddingModel embeddingModel) {
+        if (embeddingModel != null && !embeddingModel.isAllowedForNewRequests()) {
+            throw new IllegalArgumentException(
+                    "Embedding model "
+                            + embeddingModel
+                            + " da ngung ho tro cho request moi. Hay chon GEMINI_EMBEDDING_001, MULTILINGUAL_E5_BASE, PHOBERT_BASE hoac BGE_M3."
+            );
         }
     }
 }

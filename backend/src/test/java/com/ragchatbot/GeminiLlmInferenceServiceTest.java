@@ -52,12 +52,15 @@ class GeminiLlmInferenceServiceTest {
                         "Java la ngon ngu lap trinh huong doi tuong.",
                         0.92,
                         "JAVA101",
-                        "CH1"))
+                        "CH1",
+                        "java-basic.pdf",
+                        3))
         );
 
         assertThat(answer.answer()).isEqualTo("Java la ngon ngu lap trinh huong doi tuong.");
         assertThat(answer.groundedInDocuments()).isTrue();
-        assertThat(answer.citations()).containsExactly(documentId + ":" + chunkId);
+        assertThat(answer.citations()).extracting("documentId", "chunkId", "sourceFileName", "pageNumber")
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(documentId, chunkId, "java-basic.pdf", 3));
     }
 
     @Test
@@ -87,7 +90,7 @@ class GeminiLlmInferenceServiceTest {
                 fakeClient,
                 (question, conversationHistory, retrievedContexts) -> new LlmAnswer(
                         "Tra loi tu Ollama fallback.",
-                        List.of("fallback-citation"),
+                        List.of(retrievedContexts.getFirst().toCitationReference()),
                         true
                 )
         );
@@ -101,11 +104,13 @@ class GeminiLlmInferenceServiceTest {
                         "Java la ngon ngu lap trinh.",
                         0.9,
                         "JAVA101",
-                        "CH1"))
+                        "CH1",
+                        "fallback.pdf",
+                        5))
         );
 
         assertThat(answer.answer()).isEqualTo("Tra loi tu Ollama fallback.");
-        assertThat(answer.citations()).containsExactly("fallback-citation");
+        assertThat(answer.citations()).hasSize(1);
         assertThat(answer.groundedInDocuments()).isTrue();
     }
 }

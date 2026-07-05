@@ -3,6 +3,7 @@ package com.ragchatbot.application.usecase.chat;
 import com.ragchatbot.application.dto.chat.ChatAttachmentUploadResponse;
 import com.ragchatbot.application.usecase.document.DocumentIndexingWorker;
 import com.ragchatbot.application.usecase.document.DocumentUploadJob;
+import com.ragchatbot.config.EmbeddingProperties;
 import com.ragchatbot.domain.enums.ChunkingStrategy;
 import com.ragchatbot.domain.enums.DocumentStatus;
 import com.ragchatbot.domain.model.Conversation;
@@ -28,15 +29,18 @@ public class UploadChatAttachmentUseCase {
     private final ConversationRepository conversationRepository;
     private final DocumentRepository documentRepository;
     private final DocumentIndexingWorker documentIndexingWorker;
+    private final EmbeddingProperties embeddingProperties;
 
     public UploadChatAttachmentUseCase(
             ConversationRepository conversationRepository,
             DocumentRepository documentRepository,
-            DocumentIndexingWorker documentIndexingWorker
+            DocumentIndexingWorker documentIndexingWorker,
+            EmbeddingProperties embeddingProperties
     ) {
         this.conversationRepository = conversationRepository;
         this.documentRepository = documentRepository;
         this.documentIndexingWorker = documentIndexingWorker;
+        this.embeddingProperties = embeddingProperties;
     }
 
     public ChatAttachmentUploadResponse execute(String sessionId, MultipartFile file) {
@@ -83,7 +87,8 @@ public class UploadChatAttachmentUseCase {
                 null,
                 conversation.getSessionId(),
                 checksum,
-                DEFAULT_CHAT_CHUNKING_STRATEGY
+                DEFAULT_CHAT_CHUNKING_STRATEGY,
+                embeddingProperties.getDefaultModel()
         ));
 
         return new ChatAttachmentUploadResponse(

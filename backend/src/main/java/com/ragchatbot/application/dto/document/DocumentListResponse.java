@@ -2,6 +2,7 @@ package com.ragchatbot.application.dto.document;
 
 import com.ragchatbot.domain.enums.ChunkingStrategy;
 import com.ragchatbot.domain.enums.DocumentStatus;
+import com.ragchatbot.domain.enums.EmbeddingModel;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -17,6 +18,7 @@ public record DocumentListResponse(
         String failureReason,
         Long chunkCount,
         ChunkingStrategy latestChunkingStrategy,
+        EmbeddingModel embeddingModel,
         Instant indexedAt,
         Instant createdAt
 ) {
