@@ -20,7 +20,7 @@ public class EmbeddingConfiguration {
     ) {
         return new LocalHttpEmbeddingService(
                 EmbeddingModel.MULTILINGUAL_E5_BASE,
-                "E5_BASE",
+                "multilingual-e5-base",
                 properties,
                 objectMapper
         );
@@ -33,7 +33,7 @@ public class EmbeddingConfiguration {
     ) {
         return new LocalHttpEmbeddingService(
                 EmbeddingModel.PHOBERT_BASE,
-                "PHOBERT_BASE",
+                "phobert-base",
                 properties,
                 objectMapper
         );
@@ -46,7 +46,7 @@ public class EmbeddingConfiguration {
     ) {
         return new LocalHttpEmbeddingService(
                 EmbeddingModel.BGE_M3,
-                "BGE_M3",
+                "bge-m3",
                 properties,
                 objectMapper
         );
