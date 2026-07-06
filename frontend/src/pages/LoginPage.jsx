@@ -25,8 +25,8 @@ function LoginPage() {
     <AuthShell accent="left">
       <div className="mx-auto flex max-w-[34rem] flex-col items-center text-center">
         <LogoMark variant="auth" className="size-15 rounded-2xl" />
-        <h1 className="mt-10 text-6xl font-semibold tracking-[-0.04em] text-text-primary">Welcome back</h1>
-        <p className="mt-4 text-[1.8rem] text-text-secondary">Continue your journey with Assistant</p>
+        <h1 className="mt-10 text-6xl font-semibold tracking-[-0.04em] text-text-primary">Chào mừng trở lại</h1>
+        <p className="mt-4 text-[1.8rem] text-text-secondary">Tiếp tục làm việc cùng Trợ lý AI</p>
 
         <form
           onSubmit={handleSubmit}
@@ -34,7 +34,7 @@ function LoginPage() {
         >
           <div className="space-y-7">
             <AuthInput
-              label="Email Address"
+              label="Địa chỉ email"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -42,7 +42,7 @@ function LoginPage() {
               required
             />
             <AuthInput
-              label="Password"
+              label="Mật khẩu"
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -50,7 +50,7 @@ function LoginPage() {
               required
               action={
                 <button type="button" className="text-base font-semibold text-teal transition hover:text-teal-strong">
-                  Forgot password?
+                  Quên mật khẩu?
                 </button>
               }
             />
@@ -60,13 +60,13 @@ function LoginPage() {
             type="submit"
             className="mt-8 flex h-15 w-full items-center justify-center gap-3 rounded-2xl bg-teal px-6 text-2xl font-semibold text-white transition hover:bg-teal-strong"
           >
-            <span>Sign In</span>
+            <span>Đăng nhập</span>
             <ArrowRight className="size-6" />
           </button>
 
           <div className="my-8 flex items-center gap-4 text-base text-text-secondary">
             <div className="h-px flex-1 bg-border-subtle" />
-            <span>Or continue with</span>
+            <span>Hoặc tiếp tục với</span>
             <div className="h-px flex-1 bg-border-subtle" />
           </div>
 
@@ -77,16 +77,16 @@ function LoginPage() {
         </form>
 
         <p className="mt-10 text-[1.8rem] text-text-secondary">
-          Don't have an account?{" "}
+          Chưa có tài khoản?{" "}
           <Link to="/register" className="font-semibold text-teal transition hover:text-teal-strong">
-            Create an account
+            Tạo tài khoản
           </Link>
         </p>
 
         <div className="mt-16 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-lg text-text-muted">
-          <span>Privacy Policy</span>
-          <span>Terms of Service</span>
-          <span>Help Center</span>
+          <span>Chính sách bảo mật</span>
+          <span>Điều khoản dịch vụ</span>
+          <span>Trung tâm trợ giúp</span>
         </div>
       </div>
     </AuthShell>

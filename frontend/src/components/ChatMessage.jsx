@@ -2,7 +2,7 @@ import { Bot, CircleAlert, Sparkles, User } from "lucide-react";
 
 function buildCitationLabel(citation) {
   if (citation.sourceFileName && citation.pageNumber != null) {
-    return `${citation.sourceFileName} • page ${citation.pageNumber}`;
+    return `${citation.sourceFileName} • trang ${citation.pageNumber}`;
   }
 
   if (citation.sourceFileName) {
@@ -10,7 +10,7 @@ function buildCitationLabel(citation) {
   }
 
   if (citation.pageNumber != null) {
-    return `Page ${citation.pageNumber}`;
+    return `Trang ${citation.pageNumber}`;
   }
 
   if (citation.courseCode && citation.chapterCode) {
@@ -22,10 +22,10 @@ function buildCitationLabel(citation) {
   }
 
   if (citation.documentId) {
-    return `Document ${citation.documentId.slice(0, 8)}`;
+    return `Tài liệu ${citation.documentId.slice(0, 8)}`;
   }
 
-  return "Structured source";
+  return "Nguồn có cấu trúc";
 }
 
 function ChatMessage({ message }) {
@@ -59,13 +59,13 @@ function ChatMessage({ message }) {
           {message.groundedInDocuments && !isUser && !isError ? (
             <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal-soft px-3 py-1 text-xs font-semibold text-teal">
               <Bot className="size-3.5" />
-              Grounded in uploaded documents
+              Dựa trên tài liệu đã tải lên
             </div>
           ) : null}
           {!isUser && !isError && citations.length > 0 ? (
             <div className="mt-4 space-y-2 border-t border-border-subtle pt-4">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                Sources
+                Nguồn
               </p>
               <div className="flex flex-wrap gap-2">
                 {citations.map((citation, index) => (
@@ -83,7 +83,7 @@ function ChatMessage({ message }) {
         <div className="flex items-center gap-2 px-1 text-xs text-text-muted">
           {isUser ? <User className="size-3.5" /> : <Sparkles className="size-3.5" />}
           <span>
-            {message.createdAt ? new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Just now"}
+            {message.createdAt ? new Date(message.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "Vừa xong"}
           </span>
         </div>
       </div>

@@ -32,7 +32,7 @@ export async function uploadChatAttachment(payload) {
   });
 
   if (!response.ok) {
-    let message = "Upload file that bai.";
+    let message = "Upload tệp thất bại.";
     try {
       const body = await response.json();
       message = body.message || body.error || message;

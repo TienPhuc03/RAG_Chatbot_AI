@@ -3,16 +3,16 @@ import { useEffect, useRef } from "react";
 
 function statusLabel(status) {
   if (status === "INDEXED") {
-    return "San sang";
+    return "Sẵn sàng";
   }
   if (status === "FAILED") {
-    return "That bai";
+    return "Thất bại";
   }
   if (status === "PROCESSING") {
-    return "Dang index";
+    return "Đang index";
   }
   if (status === "PENDING") {
-    return "Dang tai len";
+    return "Đang tải lên";
   }
   return status || "";
 }
@@ -77,7 +77,7 @@ function ChatComposer({
             value={value}
             onChange={(event) => onChange(event.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Hoi toi bat cu dieu gi..."
+            placeholder="Hỏi tôi bất cứ điều gì..."
             className="max-h-56 min-h-12 flex-1 resize-none bg-transparent px-2 py-3 text-lg text-text-primary outline-none placeholder:text-text-muted"
           />
           <button
@@ -103,13 +103,13 @@ function ChatComposer({
               <span className="max-w-60 truncate underline decoration-dotted underline-offset-4">
                 {selectedFile.name}
               </span>
-              <span className="text-xs text-text-secondary">Sap gui</span>
+              <span className="text-xs text-text-secondary">Sắp gửi</span>
               <button
                 type="button"
                 onClick={onRemoveSelectedFile}
                 className="rounded-full px-2 py-1 text-xs text-text-secondary transition hover:bg-white hover:text-text-primary"
               >
-                Bo
+                Bỏ
               </button>
             </div>
           </div>

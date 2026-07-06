@@ -1,75 +1,35 @@
-import { useEffect, useState } from "react";
 import SectionIntro from "../components/SectionIntro";
-import {
-  fetchBenchmarkJobStatus,
-  fetchBenchmarkResults,
-  runBenchmark,
-} from "../services/benchmarkService";
+import { useBenchmark } from "../context/BenchmarkContext";
 
 function BenchmarkPage() {
-  const [strategy, setStrategy] = useState("SEMANTIC");
-  const [embeddingModel, setEmbeddingModel] = useState("GEMINI_EMBEDDING_001");
-  const [experimentType, setExperimentType] = useState("RAG");
-  const [jobStatus, setJobStatus] = useState(null);
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-
-  async function loadResults() {
-    try {
-      const data = await fetchBenchmarkResults();
-      setResults(data);
-    } catch (error) {
-      setMessage(error.message || "Khong tai duoc ket qua benchmark.");
-    }
-  }
-
-  useEffect(() => {
-    loadResults();
-  }, []);
+  const {
+    strategy,
+    setStrategy,
+    embeddingModel,
+    setEmbeddingModel,
+    experimentType,
+    setExperimentType,
+    jobStatus,
+    results,
+    loading,
+    message,
+    runBenchmarkJob,
+  } = useBenchmark();
 
   const hasFallbackResults = results.some((item) => (item.fallbackRunCount ?? 0) > 0);
 
   async function handleRunBenchmark(event) {
     event.preventDefault();
-    setLoading(true);
-    setMessage("");
-
-    try {
-      const response = await runBenchmark({
-        strategy,
-        embeddingModel,
-        experimentType,
-      });
-
-      let current = await fetchBenchmarkJobStatus(response.jobId);
-      setJobStatus(current);
-
-      while (current.status === "PENDING" || current.status === "RUNNING") {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        current = await fetchBenchmarkJobStatus(response.jobId);
-        setJobStatus(current);
-      }
-
-      await loadResults();
-      if (current.status === "FAILED") {
-        setMessage(current.message || "Benchmark that bai.");
-      } else {
-        setMessage(`Benchmark ket thuc voi trang thai: ${current.status}`);
-      }
-    } catch (error) {
-      setMessage(error.message || "Benchmark that bai.");
-    } finally {
-      setLoading(false);
-    }
+    await runBenchmarkJob();
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="scrollbar-subtle h-full overflow-y-auto px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl">
       <SectionIntro
-        eyebrow="Research Flow"
-        title="Benchmark"
-        description="Chay benchmark tu giao dien, theo doi tien do va xem bang ket qua tong hop ngay trong workspace."
+        eyebrow="Quy trình nghiên cứu"
+        title="Đánh giá benchmark"
+        description="Chạy benchmark từ giao diện, theo dõi tiến độ và xem bảng kết quả tổng hợp ngay trong workspace."
       />
 
       <form
@@ -77,7 +37,7 @@ function BenchmarkPage() {
         className="mt-8 grid gap-4 rounded-[2rem] border border-border-subtle bg-white p-6 shadow-soft lg:grid-cols-3"
       >
         <label className="text-sm text-text-secondary">
-          Strategy
+          Chiến lược chunking
           <select
             value={strategy}
             onChange={(event) => setStrategy(event.target.value)}
@@ -90,7 +50,7 @@ function BenchmarkPage() {
           </select>
         </label>
         <label className="text-sm text-text-secondary">
-          Embedding model
+          Mô hình embedding
           <select
             value={embeddingModel}
             onChange={(event) => setEmbeddingModel(event.target.value)}
@@ -104,7 +64,7 @@ function BenchmarkPage() {
           </select>
         </label>
         <label className="text-sm text-text-secondary">
-          Experiment type
+          Loại thử nghiệm
           <select
             value={experimentType}
             onChange={(event) => setExperimentType(event.target.value)}
@@ -120,21 +80,21 @@ function BenchmarkPage() {
             disabled={loading}
             className="h-12 rounded-2xl bg-teal px-5 text-sm font-semibold text-white transition hover:bg-teal-strong disabled:bg-slate-300"
           >
-            {loading ? "Dang chay benchmark..." : "Chay benchmark"}
+            {loading ? "Đang chạy benchmark..." : "Chạy benchmark"}
           </button>
         </div>
       </form>
 
       {experimentType === "FINETUNE" ? (
         <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          FINETUNE benchmark dang bo qua strategy va embedding selection, ket qua se duoc gom duoi nhan N/A.
+          Benchmark FINETUNE đang bỏ qua lựa chọn strategy và embedding, kết quả sẽ được gom dưới nhãn N/A.
         </div>
       ) : null}
 
       {jobStatus ? (
         <div className="mt-4 rounded-2xl border border-border-subtle bg-white px-5 py-4 text-sm text-text-secondary shadow-soft">
-          Job: {jobStatus.jobId} | Status: {jobStatus.status} | Done: {jobStatus.doneCases}/{jobStatus.totalCases}
-          {jobStatus.message ? ` | Message: ${jobStatus.message}` : ""}
+          Job: {jobStatus.jobId} | Trạng thái: {jobStatus.status} | Đã xong: {jobStatus.doneCases}/{jobStatus.totalCases}
+          {jobStatus.message ? ` | Thông báo: ${jobStatus.message}` : ""}
         </div>
       ) : null}
 
@@ -144,25 +104,25 @@ function BenchmarkPage() {
         </div>
       ) : null}
 
-      {hasFallbackResults ? (
+      {/* {hasFallbackResults ? (
         <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          Co benchmark run da fallback sang local evaluation thay vi ragas-service. Khong nen dung cac run nay lam ket luan chinh trong bao cao.
+          Có benchmark run đã fallback sang local evaluation thay vì ragas-service. Không nên dùng các run này làm kết luận chính trong báo cáo.
         </div>
-      ) : null}
+      ) : null} */}
 
       <div className="mt-8 overflow-hidden rounded-[2rem] border border-border-subtle bg-white shadow-soft">
         <div className="border-b border-border-subtle px-6 py-4 text-lg font-semibold text-text-primary">
-          Ket qua tong hop
+          Kết quả tổng hợp
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-surface-soft text-text-secondary">
               <tr>
-                <th className="px-4 py-3">Strategy</th>
+                <th className="px-4 py-3">Chiến lược</th>
                 <th className="px-4 py-3">Embedding</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Runs</th>
-                <th className="px-4 py-3">Eval source</th>
+                <th className="px-4 py-3">Loại</th>
+                <th className="px-4 py-3">Số lần chạy</th>
+                <th className="px-4 py-3">Nguồn đánh giá</th>
                 <th className="px-4 py-3">Exact Match</th>
                 <th className="px-4 py-3">F1</th>
                 <th className="px-4 py-3">Faithfulness</th>
@@ -170,8 +130,8 @@ function BenchmarkPage() {
                 <th className="px-4 py-3">Ctx Precision</th>
                 <th className="px-4 py-3">Ctx Recall</th>
                 <th className="px-4 py-3">Retrieval Hit</th>
-                <th className="px-4 py-3">Latency</th>
-                <th className="px-4 py-3">Cost (USD est.)</th>
+                <th className="px-4 py-3">Độ trễ</th>
+                <th className="px-4 py-3">Chi phí (USD ước tính)</th>
               </tr>
             </thead>
             <tbody>
@@ -215,13 +175,14 @@ function BenchmarkPage() {
               {results.length === 0 ? (
                 <tr>
                   <td colSpan="14" className="px-4 py-4 text-text-secondary">
-                    Chua co ket qua benchmark.
+                    Chưa có kết quả benchmark.
                   </td>
                 </tr>
               ) : null}
             </tbody>
           </table>
         </div>
+      </div>
       </div>
     </div>
   );
