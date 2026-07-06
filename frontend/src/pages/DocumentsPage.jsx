@@ -1,12 +1,5 @@
-import { useEffect, useState } from "react";
 import SectionIntro from "../components/SectionIntro";
-import {
-  deleteDocument,
-  fetchDocumentChunks,
-  fetchDocuments,
-  fetchDocumentStatus,
-  uploadDocument,
-} from "../services/documentService";
+import { useDocuments } from "../context/DocumentsContext";
 
 const STRATEGIES = ["FIXED_SIZE", "HIERARCHICAL", "SEMANTIC"];
 const EMBEDDING_MODELS = [
@@ -17,125 +10,44 @@ const EMBEDDING_MODELS = [
 ];
 
 function DocumentsPage() {
-  const [courseCode, setCourseCode] = useState("");
-  const [courseName, setCourseName] = useState("");
-  const [chapterCode, setChapterCode] = useState("");
-  const [chapterTitle, setChapterTitle] = useState("");
-  const [chunkingStrategy, setChunkingStrategy] = useState("SEMANTIC");
-  const [embeddingModel, setEmbeddingModel] = useState("GEMINI_EMBEDDING_001");
-  const [file, setFile] = useState(null);
-  const [documents, setDocuments] = useState([]);
-  const [selectedChunks, setSelectedChunks] = useState([]);
-  const [selectedDocumentId, setSelectedDocumentId] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState("");
-
-  async function loadDocuments(filterCourseCode = "") {
-    setLoading(true);
-    try {
-      const data = await fetchDocuments(filterCourseCode);
-      setDocuments(data);
-    } catch (error) {
-      setMessage(error.message || "Khong tai duoc danh sach tai lieu.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadDocuments();
-  }, []);
+  const {
+    courseCode,
+    setCourseCode,
+    courseName,
+    setCourseName,
+    chapterCode,
+    setChapterCode,
+    chapterTitle,
+    setChapterTitle,
+    chunkingStrategy,
+    setChunkingStrategy,
+    embeddingModel,
+    setEmbeddingModel,
+    setFile,
+    documents,
+    selectedChunks,
+    selectedDocumentId,
+    loading,
+    uploading,
+    message,
+    loadDocuments,
+    startUpload,
+    previewChunks,
+    removeDocument,
+  } = useDocuments();
 
   async function handleUpload(event) {
     event.preventDefault();
-
-    if (!file) {
-      setMessage("Ban chua chon file.");
-      return;
-    }
-    if (!courseCode.trim()) {
-      setMessage("Ban can nhap course code.");
-      return;
-    }
-    if (!courseName.trim()) {
-      setMessage("Ban can nhap course name.");
-      return;
-    }
-
-    setUploading(true);
-    setMessage("");
-
-    try {
-      const response = await uploadDocument({
-        file,
-        courseCode,
-        courseName,
-        chapterCode,
-        chapterTitle,
-        chunkingStrategy,
-        embeddingModel,
-      });
-
-      setMessage(`Da nhan file: ${response.title}. Dang cho index...`);
-
-      let currentStatus = response.status;
-      let finalFailureReason = "";
-      while (currentStatus === "PENDING" || currentStatus === "PROCESSING") {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        const status = await fetchDocumentStatus(response.id);
-        currentStatus = status.status;
-        finalFailureReason = status.failureReason || "";
-      }
-
-      await loadDocuments(courseCode.trim());
-      if (currentStatus === "FAILED" && finalFailureReason) {
-        setMessage(`Index that bai: ${finalFailureReason}`);
-      } else {
-        setMessage(`Index xong voi trang thai: ${currentStatus}`);
-      }
-    } catch (error) {
-      setMessage(error.message || "Upload that bai.");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  async function handlePreviewChunks(documentId) {
-    try {
-      const chunks = await fetchDocumentChunks(documentId);
-      setSelectedDocumentId(documentId);
-      setSelectedChunks(chunks);
-    } catch (error) {
-      setMessage(error.message || "Khong tai duoc chunk preview.");
-    }
-  }
-
-  async function handleDeleteDocument(documentId) {
-    const confirmed = window.confirm("Xoa tai lieu nay khoi danh sach va vector index?");
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await deleteDocument(documentId);
-      if (selectedDocumentId === documentId) {
-        setSelectedDocumentId("");
-        setSelectedChunks([]);
-      }
-      setMessage("Da xoa tai lieu.");
-      await loadDocuments(courseCode.trim());
-    } catch (error) {
-      setMessage(error.message || "Khong xoa duoc tai lieu.");
-    }
+    await startUpload();
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="scrollbar-subtle h-full overflow-y-auto px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl">
       <SectionIntro
-        eyebrow="Research Flow"
-        title="Documents"
-        description="Upload tai lieu, chon chunking + embedding model, va giu cung mot corpus cho moi cau hinh benchmark."
+        eyebrow="Quy trình nghiên cứu"
+        title="Tài liệu"
+        description="Upload tài liệu, chọn chunking và embedding model, rồi giữ cùng một corpus cho mỗi cấu hình benchmark."
       />
 
       <form
@@ -143,7 +55,7 @@ function DocumentsPage() {
         className="mt-8 grid gap-4 rounded-[2rem] border border-border-subtle bg-white p-6 shadow-soft lg:grid-cols-3"
       >
         <label className="text-sm text-text-secondary">
-          File
+          Tệp
           <input
             type="file"
             accept=".pdf,.doc,.docx,.ppt,.pptx"
@@ -152,7 +64,7 @@ function DocumentsPage() {
           />
         </label>
         <label className="text-sm text-text-secondary">
-          Course code
+          Mã học phần
           <input
             value={courseCode}
             onChange={(event) => setCourseCode(event.target.value)}
@@ -160,7 +72,7 @@ function DocumentsPage() {
           />
         </label>
         <label className="text-sm text-text-secondary">
-          Course name
+          Tên học phần
           <input
             value={courseName}
             onChange={(event) => setCourseName(event.target.value)}
@@ -168,7 +80,7 @@ function DocumentsPage() {
           />
         </label>
         <label className="text-sm text-text-secondary">
-          Chapter code
+          Mã chương
           <input
             value={chapterCode}
             onChange={(event) => setChapterCode(event.target.value)}
@@ -176,7 +88,7 @@ function DocumentsPage() {
           />
         </label>
         <label className="text-sm text-text-secondary">
-          Chapter title
+          Tên chương
           <input
             value={chapterTitle}
             onChange={(event) => setChapterTitle(event.target.value)}
@@ -184,7 +96,7 @@ function DocumentsPage() {
           />
         </label>
         <label className="text-sm text-text-secondary">
-          Chunking strategy
+          Chiến lược chunking
           <select
             value={chunkingStrategy}
             onChange={(event) => setChunkingStrategy(event.target.value)}
@@ -198,7 +110,7 @@ function DocumentsPage() {
           </select>
         </label>
         <label className="text-sm text-text-secondary">
-          Embedding model
+          Mô hình embedding
           <select
             value={embeddingModel}
             onChange={(event) => setEmbeddingModel(event.target.value)}
@@ -217,14 +129,14 @@ function DocumentsPage() {
             disabled={uploading}
             className="h-12 rounded-2xl bg-teal px-5 text-sm font-semibold text-white transition hover:bg-teal-strong disabled:bg-slate-300"
           >
-            {uploading ? "Dang upload..." : "Upload va index"}
+            {uploading ? "Đang upload..." : "Upload và index"}
           </button>
           <button
             type="button"
             onClick={() => loadDocuments(courseCode.trim())}
             className="h-12 rounded-2xl border border-border-subtle bg-white px-5 text-sm font-semibold text-text-primary"
           >
-            Loc danh sach
+            Lọc danh sách
           </button>
         </div>
       </form>
@@ -237,24 +149,24 @@ function DocumentsPage() {
 
       <div className="mt-8 overflow-hidden rounded-[2rem] border border-border-subtle bg-white shadow-soft">
         <div className="border-b border-border-subtle px-6 py-4 text-lg font-semibold text-text-primary">
-          Danh sach tai lieu
+          Danh sách tài liệu
         </div>
         {loading ? (
-          <div className="px-6 py-5 text-text-secondary">Dang tai du lieu...</div>
+          <div className="px-6 py-5 text-text-secondary">Đang tải dữ liệu...</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-surface-soft text-text-secondary">
                 <tr>
-                  <th className="px-4 py-3">Title</th>
-                  <th className="px-4 py-3">Course</th>
-                  <th className="px-4 py-3">Chapter</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Reason</th>
-                  <th className="px-4 py-3">Strategy</th>
+                  <th className="px-4 py-3">Tiêu đề</th>
+                  <th className="px-4 py-3">Học phần</th>
+                  <th className="px-4 py-3">Chương</th>
+                  <th className="px-4 py-3">Trạng thái</th>
+                  <th className="px-4 py-3">Lý do</th>
+                  <th className="px-4 py-3">Chiến lược</th>
                   <th className="px-4 py-3">Embedding</th>
                   <th className="px-4 py-3">Chunks</th>
-                  <th className="px-4 py-3">Action</th>
+                  <th className="px-4 py-3">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -274,17 +186,17 @@ function DocumentsPage() {
                       <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
-                        onClick={() => handlePreviewChunks(document.id)}
+                        onClick={() => previewChunks(document.id)}
                         className="rounded-xl bg-teal-soft px-3 py-2 text-xs font-semibold text-teal"
                       >
                         Xem chunk
                       </button>
                         <button
                           type="button"
-                          onClick={() => handleDeleteDocument(document.id)}
+                          onClick={() => removeDocument(document.id)}
                           className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-600"
                         >
-                          Xoa
+                          Xóa
                         </button>
                       </div>
                     </td>
@@ -293,7 +205,7 @@ function DocumentsPage() {
                 {documents.length === 0 ? (
                   <tr>
                     <td colSpan="9" className="px-4 py-4 text-text-secondary">
-                      Chua co tai lieu nao.
+                      Chưa có tài liệu nào.
                     </td>
                   </tr>
                 ) : null}
@@ -325,6 +237,7 @@ function DocumentsPage() {
           </div>
         </div>
       ) : null}
+      </div>
     </div>
   );
 }

@@ -82,7 +82,7 @@ function ChatPage() {
         setAttachments(attachmentResponse);
       } catch (loadError) {
         if (active) {
-          setError(loadError.message || "Unable to load this conversation.");
+          setError(loadError.message || "Không tải được cuộc trò chuyện này.");
         }
       } finally {
         if (active) {
@@ -124,7 +124,7 @@ function ChatPage() {
       let activeSessionId = sessionId || null;
 
       if (selectedFile) {
-        setAttachmentNotice(`Dang tai file ${selectedFile.name}...`);
+        setAttachmentNotice(`Đang tải tệp ${selectedFile.name}...`);
 
         const uploadResponse = await uploadChatAttachment({
           sessionId: activeSessionId,
@@ -149,7 +149,7 @@ function ChatPage() {
 
         let currentStatus = uploadResponse.status;
         let failureReason = uploadResponse.failureReason || "";
-        setAttachmentNotice("Dang doc file...");
+        setAttachmentNotice("Đang đọc tệp...");
 
         while (currentStatus === "PENDING" || currentStatus === "PROCESSING") {
           await wait(2000);
@@ -164,12 +164,12 @@ function ChatPage() {
         }
 
         if (currentStatus === "FAILED") {
-          setAttachmentNotice(failureReason || "File that bai.");
+          setAttachmentNotice(failureReason || "Tệp xử lý thất bại.");
           await refreshConversations();
           return;
         }
 
-        setAttachmentNotice(`File ${uploadResponse.fileName} da san sang.`);
+        setAttachmentNotice(`Tệp ${uploadResponse.fileName} đã sẵn sàng.`);
       }
 
       const optimisticMessage = {
@@ -210,7 +210,7 @@ function ChatPage() {
         navigate(`/chat/${response.sessionId}`, { replace: true });
       }
     } catch (sendError) {
-      setError(sendError.message || "Unable to send your message.");
+      setError(sendError.message || "Không gửi được tin nhắn của bạn.");
       await refreshConversations();
     } finally {
       setSendLoading(false);
@@ -222,7 +222,7 @@ function ChatPage() {
       <div className="mx-auto w-full max-w-4xl px-4 pt-6 sm:px-6 lg:px-8">
         <div className="grid gap-4 rounded-[1.75rem] border border-border-subtle bg-white p-5 shadow-soft sm:grid-cols-2">
           <label className="text-sm text-text-secondary">
-            Course code
+            Mã học phần
             <input
               value={courseCode}
               onChange={(event) => setCourseCode(event.target.value)}
@@ -231,7 +231,7 @@ function ChatPage() {
             />
           </label>
           <label className="text-sm text-text-secondary">
-            Chapter code
+            Mã chương
             <input
               value={chapterCode}
               onChange={(event) => setChapterCode(event.target.value)}
@@ -253,7 +253,7 @@ function ChatPage() {
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
             {historyLoading ? (
               <div className="rounded-[1.75rem] border border-border-subtle bg-white px-6 py-5 text-text-secondary shadow-soft">
-                Loading chat history...
+                Đang tải lịch sử trò chuyện...
               </div>
             ) : null}
 
@@ -278,7 +278,7 @@ function ChatPage() {
       </div>
 
       <div className="px-4 text-center text-sm text-text-muted sm:px-6 lg:px-8">
-        <p className="pb-2">AI co the mac loi. Hay xac minh thong tin quan trong.</p>
+        <p className="pb-2">AI có thể mắc lỗi. Hãy xác minh các thông tin quan trọng.</p>
       </div>
 
       <ChatComposer

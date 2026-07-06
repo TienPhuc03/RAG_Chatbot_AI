@@ -37,7 +37,7 @@ export async function uploadDocument(payload) {
   });
 
   if (!response.ok) {
-    let message = "Upload failed.";
+    let message = "Upload thất bại.";
     try {
       const body = await response.json();
       message = body.message || body.error || message;

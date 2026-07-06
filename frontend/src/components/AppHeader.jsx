@@ -2,22 +2,20 @@ import { Menu, MoreVertical, Share2 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 const PAGE_TITLES = {
-  "/chat": "Assistant",
-  "/documents": "Documents",
-  "/benchmark": "Benchmark",
-  "/templates": "Templates",
-  "/settings": "Settings",
+  "/chat": "Trợ lý",
+  "/documents": "Tài liệu",
+  "/benchmark": "Đánh giá",
 };
 
 function AppHeader({ onOpenSidebar }) {
   const location = useLocation();
   const title =
     location.pathname.startsWith("/chat/")
-      ? "Assistant"
-      : PAGE_TITLES[location.pathname] || "Workspace";
+      ? "Trợ lý"
+      : PAGE_TITLES[location.pathname] || "Không gian làm việc";
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border-subtle bg-white/80 backdrop-blur-xl">
+    <header className="z-20 shrink-0 border-b border-border-subtle bg-white/80 backdrop-blur-xl">
       <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
           <button

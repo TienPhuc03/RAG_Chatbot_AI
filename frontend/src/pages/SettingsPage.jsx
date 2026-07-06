@@ -4,18 +4,18 @@ import SectionIntro from "../components/SectionIntro";
 const settingsGroups = [
   {
     icon: Globe2,
-    title: "Workspace defaults",
-    description: "Set your preferred language, answer style, and document grounding mode.",
+    title: "Mặc định workspace",
+    description: "Thiết lập ngôn ngữ, phong cách trả lời và chế độ bám sát tài liệu.",
   },
   {
     icon: Bell,
-    title: "Notifications",
-    description: "Decide how you want to be informed about completed uploads and benchmark runs.",
+    title: "Thông báo",
+    description: "Chọn cách nhận thông báo khi upload hoặc benchmark hoàn tất.",
   },
   {
     icon: ShieldCheck,
-    title: "Privacy",
-    description: "Review session persistence, message retention, and other trust-sensitive controls.",
+    title: "Quyền riêng tư",
+    description: "Xem lại lưu phiên, lưu tin nhắn và các thiết lập nhạy cảm về dữ liệu.",
   },
 ];
 
@@ -23,13 +23,13 @@ function SettingsPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <SectionIntro
-        eyebrow="Configuration"
-        title="Settings"
-        description="A calm control surface for the assistant workspace. This page is scaffolded and ready for future backend integration."
+        eyebrow="Cấu hình"
+        title="Cài đặt"
+        description="Khu vực điều khiển cho workspace trợ lý. Trang này đã sẵn sàng để tích hợp backend về sau."
         action={
           <button className="inline-flex h-13 items-center gap-3 rounded-2xl border border-border-subtle bg-white px-5 text-base font-semibold text-text-primary transition hover:bg-surface-muted">
             <SlidersHorizontal className="size-5" />
-            <span>Review preferences</span>
+            <span>Xem tùy chọn</span>
           </button>
         }
       />
@@ -48,7 +48,7 @@ function SettingsPage() {
                 </div>
               </div>
               <button className="h-12 rounded-2xl bg-teal px-5 text-sm font-semibold text-white transition hover:bg-teal-strong">
-                Configure
+                Cấu hình
               </button>
             </div>
           </div>
