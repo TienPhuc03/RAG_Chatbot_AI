@@ -104,7 +104,7 @@ public class BenchmarkRunnerService {
                             null,
                             null
                     );
-                    retrievalHit = computeRetrievalHit(testCase.groundTruth(), retrievedContexts);
+                    retrievalHit = computeRetrievalHit(testCase, retrievedContexts);
                     LlmAnswer llmAnswer = llmInferenceService.generateAnswer(
                             testCase.question(),
                             new ArrayList<>(),
@@ -140,6 +140,8 @@ public class BenchmarkRunnerService {
                 );
 
                 BenchmarkResult benchmarkResult = new BenchmarkResult();
+                benchmarkResult.setRunId(config.runId());
+                benchmarkResult.setQuestionId(testCase.id());
                 benchmarkResult.setExperimentType(experimentType);
                 benchmarkResult.setChunkingStrategy(experimentType == ExperimentType.RAG ? chunkingStrategy : null);
                 benchmarkResult.setEmbeddingModel(experimentType == ExperimentType.RAG ? embeddingModel : null);
@@ -201,22 +203,48 @@ public class BenchmarkRunnerService {
         return message;
     }
 
-    private boolean computeRetrievalHit(String groundTruth, List<RetrievedContext> retrievedContexts) {
-        if (groundTruth == null || groundTruth.isBlank()) {
-            return false;
+    private boolean computeRetrievalHit(TestCase testCase, List<RetrievedContext> retrievedContexts) {
+        if (Boolean.TRUE.equals(testCase.outOfScope())) {
+            return retrievedContexts == null || retrievedContexts.isEmpty();
         }
+
         if (retrievedContexts == null || retrievedContexts.isEmpty()) {
             return false;
         }
 
-        String normalizedGroundTruth = groundTruth.toLowerCase().trim();
-        return retrievedContexts.stream()
-                .map(RetrievedContext::content)
-                .filter(content -> content != null && !content.isBlank())
-                .map(content -> content.toLowerCase().trim())
-                .anyMatch(content ->
-                        content.contains(normalizedGroundTruth) || normalizedGroundTruth.contains(content)
-                );
+        String expectedSource = normalize(testCase.expectedSource());
+
+        boolean sourceHit = expectedSource == null || retrievedContexts.stream()
+                .anyMatch(context -> {
+                    String sourceFileName = normalize(context.sourceFileName());
+                    return sourceFileName != null && sourceFileName.contains(expectedSource);
+                });
+
+        List<String> keywords = testCase.expectedKeywords() == null
+                ? List.of()
+                : testCase.expectedKeywords();
+
+        long keywordHits = keywords.stream()
+                .filter(keyword -> {
+                    String normalizedKeyword = normalize(keyword);
+                    return normalizedKeyword != null && retrievedContexts.stream()
+                            .anyMatch(context -> {
+                                String content = normalize(context.content());
+                                return content != null && content.contains(normalizedKeyword);
+                            });
+                })
+                .count();
+
+        int requiredHits = Math.max(1, (int) Math.ceil(keywords.size() * 0.5));
+
+        return sourceHit && keywordHits >= requiredHits;
+    }
+
+    private String normalize(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.toLowerCase(Locale.ROOT).trim();
     }
 
     private long elapsedMillis(long startedAtNanos) {
@@ -226,7 +254,8 @@ public class BenchmarkRunnerService {
     public record BenchmarkConfig(
             String strategy,
             String embeddingModel,
-            String experimentType
+            String experimentType,
+            String runId
     ) {
     }
 }

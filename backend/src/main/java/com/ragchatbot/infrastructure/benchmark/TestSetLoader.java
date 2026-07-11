@@ -33,11 +33,30 @@ public class TestSetLoader {
                     throw new IllegalStateException("Test set trống hoặc không tìm thấy dữ liệu trong file.");
                 }
 
+                java.util.Set<String> ids = new java.util.HashSet<>();
                 // Validate 2: Kiểm tra từng TestCase không được thiếu trường dữ liệu nào
                 for (TestCase testCase : testCases) {
-                    if (testCase.id() == null || testCase.question() == null ||
-                            testCase.groundTruth() == null || testCase.category() == null) {
-                        throw new IllegalStateException("Sai định dạng: TestCase chứa giá trị null tại id: " + testCase.id());
+                    if (testCase.id() == null || testCase.id().isBlank()) {
+                        throw new IllegalStateException("TestCase thiếu id");
+                    }
+                    if (!ids.add(testCase.id())) {
+                        throw new IllegalStateException("Trùng id trong test set: " + testCase.id());
+                    }
+                    if (testCase.question() == null || testCase.question().isBlank()) {
+                        throw new IllegalStateException("TestCase thiếu question tại id: " + testCase.id());
+                    }
+                    if (testCase.groundTruth() == null || testCase.groundTruth().isBlank()) {
+                        throw new IllegalStateException("TestCase thiếu groundTruth tại id: " + testCase.id());
+                    }
+                    
+                    boolean outOfScope = Boolean.TRUE.equals(testCase.outOfScope());
+                    if (!outOfScope) {
+                        if (testCase.expectedSource() == null || testCase.expectedSource().isBlank()) {
+                            throw new IllegalStateException("Thiếu expectedSource tại id: " + testCase.id());
+                        }
+                        if (testCase.expectedKeywords() == null || testCase.expectedKeywords().size() < 2) {
+                            throw new IllegalStateException("Cần ít nhất 2 expectedKeywords tại id: " + testCase.id());
+                        }
                     }
                 }
 

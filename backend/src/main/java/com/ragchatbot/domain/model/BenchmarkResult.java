@@ -40,6 +40,12 @@ public class BenchmarkResult {
     @Column(name = "embedding_model", length = 50)
     private EmbeddingModel embeddingModel;
 
+    @Column(name = "run_id", length = 100)
+    private String runId;
+
+    @Column(name = "question_id", length = 20)
+    private String questionId;
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String question;
 
@@ -128,6 +134,22 @@ public class BenchmarkResult {
 
     public void setQuestion(String question) {
         this.question = question;
+    }
+
+    public String getRunId() {
+        return runId;
+    }
+
+    public void setRunId(String runId) {
+        this.runId = runId;
+    }
+
+    public String getQuestionId() {
+        return questionId;
+    }
+
+    public void setQuestionId(String questionId) {
+        this.questionId = questionId;
     }
 
     public String getGroundTruth() {
