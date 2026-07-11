@@ -6,6 +6,7 @@ import com.ragchatbot.infrastructure.persistence.ConversationRepository;
 import com.ragchatbot.infrastructure.persistence.MessageRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 public class GetChatHistoryUseCase {
@@ -28,10 +29,17 @@ public class GetChatHistoryUseCase {
      * Lấy lịch sử hội thoại theo sessionId.
      */
     public List<ChatHistoryMessageDto> execute(String sessionId) {
+        if (!StringUtils.hasText(sessionId)) {
+            return List.of();
+        }
 
         Conversation conversation =
-                conversationRepository.findBySessionId(sessionId)
-                        .orElseThrow();
+                conversationRepository.findBySessionId(sessionId.trim())
+                        .orElse(null);
+
+        if (conversation == null) {
+            return List.of();
+        }
 
         return messageRepository
                 .findByConversationIdOrderBySequenceNoAsc(

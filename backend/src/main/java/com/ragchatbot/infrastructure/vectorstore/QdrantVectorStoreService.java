@@ -1,6 +1,7 @@
 package com.ragchatbot.infrastructure.vectorstore;
 
 import static io.qdrant.client.ConditionFactory.matchKeyword;
+import static io.qdrant.client.ConditionFactory.isEmpty;
 import static io.qdrant.client.PointIdFactory.id;
 import static io.qdrant.client.ValueFactory.nullValue;
 import static io.qdrant.client.ValueFactory.value;
@@ -231,6 +232,8 @@ public class QdrantVectorStoreService implements VectorStoreService {
         }
         if (hasText(conversationSessionId)) {
             filterBuilder.addMust(matchKeyword(PAYLOAD_SESSION_ID, conversationSessionId));
+        } else {
+            filterBuilder.addMust(isEmpty(PAYLOAD_SESSION_ID));
         }
         if (hasText(courseCode)) {
             filterBuilder.addMust(matchKeyword(PAYLOAD_COURSE_CODE, courseCode));

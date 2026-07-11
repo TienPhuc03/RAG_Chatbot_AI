@@ -125,7 +125,7 @@ public class SendMessageUseCase {
             );
         }
 
-        EmbeddingModel embeddingModel = embeddingProperties.getDefaultModel();
+        EmbeddingModel embeddingModel = resolveEmbeddingModel(request.embeddingModel());
         List<Float> questionEmbedding = embeddingRouter.embed(embeddingModel, request.question());
 
         List<RetrievedContext> retrievedContexts = vectorStoreService.search(
@@ -138,11 +138,11 @@ public class SendMessageUseCase {
                 useConversationAttachments ? conversationSessionId : null
         );
 
-        if (useConversationAttachments && retrievedContexts.isEmpty()) {
+        if (retrievedContexts.isEmpty()) {
             return buildAssistantOnlyResponse(
                     conversation,
                     assistantSequenceNo,
-                    "Khong tim thay ngu canh phu hop trong file da gan. Hay hoi cu the hon hoac thu file khac."
+                    buildNoContextMessage(embeddingModel, useConversationAttachments)
             );
         }
 
@@ -173,6 +173,20 @@ public class SendMessageUseCase {
                 answer.groundedInDocuments(),
                 citations
         );
+    }
+
+    private EmbeddingModel resolveEmbeddingModel(EmbeddingModel requestedModel) {
+        if (requestedModel == null) {
+            return embeddingProperties.getDefaultModel();
+        }
+
+        if (!requestedModel.isAllowedForNewRequests()) {
+            throw new IllegalArgumentException(
+                    "Embedding model " + requestedModel + " da ngung ho tro cho request moi."
+            );
+        }
+
+        return requestedModel;
     }
 
     private boolean hasIndexedDocuments(String courseCode, String chapterCode) {
@@ -242,6 +256,18 @@ public class SendMessageUseCase {
                     + ". Hay upload file DOCX hoac PDF co the copy text, roi doi index xong.";
         }
         return "He thong chua co tai lieu nao o trang thai INDEXED. Hay upload file DOCX hoac PDF co the copy text truoc khi chat.";
+    }
+
+    private String buildNoContextMessage(EmbeddingModel embeddingModel, boolean useConversationAttachments) {
+        if (useConversationAttachments) {
+            return "Khong tim thay ngu canh phu hop trong file da gan voi embedding model "
+                    + embeddingModel
+                    + ". Hay hoi cu the hon hoac thu lai dung embedding model khi upload file.";
+        }
+
+        return "Khong tim thay ngu canh phu hop voi embedding model "
+                + embeddingModel
+                + ". Hay kiem tra tai lieu da upload bang cung embedding model nay.";
     }
 
     private Conversation resolveConversation(ChatRequest request) {
