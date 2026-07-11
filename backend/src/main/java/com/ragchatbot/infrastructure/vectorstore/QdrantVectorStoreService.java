@@ -117,7 +117,7 @@ public class QdrantVectorStoreService implements VectorStoreService {
             List<Float> embedding = embeddings.get(i);
             validateEmbedding(embeddingModel, embedding, i);
 
-            UUID pointId = pointId(documentId, chunk.chunkIndex());
+            UUID pointId = pointId(documentId, embeddingModel, chunkingStrategy, chunk.chunkIndex());
             points.add(PointStruct.newBuilder()
                     .setId(id(pointId))
                     .setVectors(vectors(embedding))
@@ -250,19 +250,26 @@ public class QdrantVectorStoreService implements VectorStoreService {
         }
 
         return new RetrievedContext(
+                documentId, 
                 chunkId,
-                documentId,
                 stringValue(payload, PAYLOAD_CONTENT),
                 (double) point.getScore(),
                 stringValue(payload, PAYLOAD_COURSE_CODE),
                 stringValue(payload, PAYLOAD_CHAPTER_CODE),
                 stringValue(payload, PAYLOAD_SOURCE_FILE_NAME),
-                integerValue(payload, PAYLOAD_PAGE_NUMBER)
+                integerValue(payload, PAYLOAD_PAGE_NUMBER),
+                null, // pageStart
+                null, // pageEnd
+                null  // section
         );
     }
 
-    private UUID pointId(UUID documentId, int chunkIndex) {
-        return UUID.nameUUIDFromBytes((documentId + ":" + chunkIndex).getBytes(StandardCharsets.UTF_8));
+    private UUID pointId(UUID documentId,EmbeddingModel embeddingModel, ChunkingStrategy chunkingStrategy, int chunkIndex) {
+        String raw = documentId
+                    + ":" + embeddingModel.name()
+                    + ":" + chunkingStrategy.name()
+                    + ":" + chunkIndex;
+        return UUID.nameUUIDFromBytes(raw.getBytes(StandardCharsets.UTF_8));
     }
 
     private void validateEmbedding(EmbeddingModel embeddingModel, List<Float> embedding, int index) {

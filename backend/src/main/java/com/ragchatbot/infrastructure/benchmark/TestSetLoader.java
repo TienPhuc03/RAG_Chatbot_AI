@@ -2,6 +2,7 @@ package com.ragchatbot.infrastructure.benchmark;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ragchatbot.domain.model.RelevantSource;
 import com.ragchatbot.domain.model.TestCase;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -34,13 +35,30 @@ public class TestSetLoader {
                 }
 
                 // Validate 2: Kiểm tra từng TestCase không được thiếu trường dữ liệu nào
-                for (TestCase testCase : testCases) {
-                    if (testCase.id() == null || testCase.question() == null ||
+                    for (TestCase testCase : testCases) {
+                        if (testCase.id() == null || testCase.question() == null ||
                             testCase.groundTruth() == null || testCase.category() == null) {
-                        throw new IllegalStateException("Sai định dạng: TestCase chứa giá trị null tại id: " + testCase.id());
-                    }
-                }
+                            throw new IllegalStateException("Sai định dạng: TestCase chứa giá trị null tại id: " + testCase.id());
+                        }
+                        boolean outOfScope = Boolean.TRUE.equals(testCase.outOfScope());
+                        if (!outOfScope) {
+                            // Bắt buộc phải có relevantSources cho các câu in-scope
+                            if (testCase.relevantSources() == null || testCase.relevantSources().isEmpty()) {
+                                throw new IllegalStateException("TestCase thiếu relevantSources tại id: " + testCase.id());
+                            }
 
+                            for (RelevantSource source : testCase.relevantSources()) {
+                                if (source.documentId() == null || source.documentId().isBlank()) {
+                                    throw new IllegalStateException("RelevantSource thiếu documentId tại id: " + testCase.id());
+                                }
+                                // Phải có ít nhất trang hoặc mục để đối chiếu
+                                if (source.pageStart() == null && (source.section() == null || source.section().isBlank())) {
+                                    throw new IllegalStateException("Cần ít nhất pageStart hoặc section tại id: " + testCase.id());
+                                }
+                            }
+                        }
+  
+            }
                 return testCases;
             }
         } catch (Exception e) {

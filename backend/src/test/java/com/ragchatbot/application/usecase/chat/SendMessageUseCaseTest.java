@@ -91,7 +91,7 @@ class SendMessageUseCaseTest {
                 "JAVA101",
                 "CH1",
                 "java-intro.pdf",
-                12
+                12, null, null, null
         );
         when(vectorStoreService.search(
                 eq(EmbeddingModel.GEMINI_EMBEDDING_001),
