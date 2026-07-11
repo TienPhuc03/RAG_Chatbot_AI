@@ -11,6 +11,7 @@ import com.ragchatbot.application.usecase.chat.GetChatHistoryUseCase;
 import com.ragchatbot.application.usecase.chat.GetConversationsUseCase;
 import com.ragchatbot.application.usecase.chat.SendMessageUseCase;
 import com.ragchatbot.application.usecase.chat.UploadChatAttachmentUseCase;
+import com.ragchatbot.domain.enums.EmbeddingModel;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -85,9 +86,10 @@ public class ChatController {
     @PostMapping("/attachments")
     public ResponseEntity<ChatAttachmentUploadResponse> uploadAttachment(
             @RequestParam(required = false) String sessionId,
+            @RequestParam(required = false) EmbeddingModel embeddingModel,
             @RequestParam("file") MultipartFile file
     ) {
-        ChatAttachmentUploadResponse response = uploadChatAttachmentUseCase.execute(sessionId, file);
+        ChatAttachmentUploadResponse response = uploadChatAttachmentUseCase.execute(sessionId, file, embeddingModel);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 

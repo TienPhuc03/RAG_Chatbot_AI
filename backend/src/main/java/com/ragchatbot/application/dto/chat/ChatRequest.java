@@ -1,5 +1,6 @@
 package com.ragchatbot.application.dto.chat;
 
+import com.ragchatbot.domain.enums.EmbeddingModel;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -19,7 +20,12 @@ public record ChatRequest(
 
         String courseCode,
 
-        String chapterCode
+        String chapterCode,
+
+        EmbeddingModel embeddingModel
 
 ) {
+    public ChatRequest(String sessionId, String question, String courseCode, String chapterCode) {
+        this(sessionId, question, courseCode, chapterCode, null);
+    }
 }

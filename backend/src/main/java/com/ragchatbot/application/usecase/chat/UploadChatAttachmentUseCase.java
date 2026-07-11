@@ -6,6 +6,7 @@ import com.ragchatbot.application.usecase.document.DocumentUploadJob;
 import com.ragchatbot.config.EmbeddingProperties;
 import com.ragchatbot.domain.enums.ChunkingStrategy;
 import com.ragchatbot.domain.enums.DocumentStatus;
+import com.ragchatbot.domain.enums.EmbeddingModel;
 import com.ragchatbot.domain.model.Conversation;
 import com.ragchatbot.domain.model.Document;
 import com.ragchatbot.infrastructure.persistence.ConversationRepository;
@@ -44,11 +45,16 @@ public class UploadChatAttachmentUseCase {
     }
 
     public ChatAttachmentUploadResponse execute(String sessionId, MultipartFile file) {
+        return execute(sessionId, file, null);
+    }
+
+    public ChatAttachmentUploadResponse execute(String sessionId, MultipartFile file, EmbeddingModel embeddingModel) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File must not be empty");
         }
 
         Conversation conversation = resolveConversation(sessionId);
+        EmbeddingModel resolvedEmbeddingModel = resolveEmbeddingModel(embeddingModel);
         String originalFileName = normalizeFileName(file.getOriginalFilename());
         String contentType = file.getContentType() == null || file.getContentType().isBlank()
                 ? "application/octet-stream"
@@ -88,7 +94,7 @@ public class UploadChatAttachmentUseCase {
                 conversation.getSessionId(),
                 checksum,
                 DEFAULT_CHAT_CHUNKING_STRATEGY,
-                embeddingProperties.getDefaultModel()
+                resolvedEmbeddingModel
         ));
 
         return new ChatAttachmentUploadResponse(
@@ -98,6 +104,20 @@ public class UploadChatAttachmentUseCase {
                 document.getStatus(),
                 document.getFailureReason()
         );
+    }
+
+    private EmbeddingModel resolveEmbeddingModel(EmbeddingModel embeddingModel) {
+        if (embeddingModel == null) {
+            return embeddingProperties.getDefaultModel();
+        }
+
+        if (!embeddingModel.isAllowedForNewRequests()) {
+            throw new IllegalArgumentException(
+                    "Embedding model " + embeddingModel + " da ngung ho tro cho request moi."
+            );
+        }
+
+        return embeddingModel;
     }
 
     private Conversation resolveConversation(String sessionId) {
