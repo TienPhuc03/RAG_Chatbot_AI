@@ -1,13 +1,37 @@
 package com.ragchatbot.api;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.ragchatbot.application.dto.benchmark.BenchmarkSummaryDto;
+import com.ragchatbot.domain.enums.ChunkingStrategy;
+import com.ragchatbot.domain.enums.EmbeddingModel;
+import com.ragchatbot.domain.model.ManualTestCase;
+import com.ragchatbot.domain.port.RetrievedContext;
+import com.ragchatbot.domain.port.VectorStoreService;
 import com.ragchatbot.infrastructure.benchmark.BenchmarkJobRegistry;
 import com.ragchatbot.infrastructure.benchmark.BenchmarkJobRegistry.JobSnapshot;
 import com.ragchatbot.infrastructure.benchmark.BenchmarkJobStatus;
 import com.ragchatbot.infrastructure.benchmark.BenchmarkRunnerService;
 import com.ragchatbot.infrastructure.benchmark.BenchmarkRunnerService.BenchmarkConfig;
+import com.ragchatbot.infrastructure.benchmark.ManualTestSetLoader;
 import com.ragchatbot.infrastructure.benchmark.TestSetLoader;
+import com.ragchatbot.infrastructure.embedding.EmbeddingRouter;
 import com.ragchatbot.infrastructure.persistence.BenchmarkResultRepository;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -16,18 +40,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/benchmark")
@@ -38,17 +50,26 @@ public class BenchmarkController {
     private final BenchmarkJobRegistry jobRegistry;
     private final BenchmarkResultRepository benchmarkResultRepository;
     private final TestSetLoader testSetLoader;
+    private final ManualTestSetLoader manualTestSetLoader;
+    private final EmbeddingRouter embeddingRouter;
+    private final VectorStoreService vectorStoreService;
 
     public BenchmarkController(
             BenchmarkRunnerService benchmarkRunnerService,
             BenchmarkJobRegistry jobRegistry,
             BenchmarkResultRepository benchmarkResultRepository,
-            TestSetLoader testSetLoader
+            TestSetLoader testSetLoader,
+            ManualTestSetLoader manualTestSetLoader,
+            EmbeddingRouter embeddingRouter,
+            VectorStoreService vectorStoreService
     ) {
         this.benchmarkRunnerService = benchmarkRunnerService;
         this.jobRegistry = jobRegistry;
         this.benchmarkResultRepository = benchmarkResultRepository;
         this.testSetLoader = testSetLoader;
+        this.manualTestSetLoader = manualTestSetLoader;
+        this.embeddingRouter = embeddingRouter;
+        this.vectorStoreService = vectorStoreService;
     }
 
     @Operation(summary = "Chay benchmark")
@@ -102,6 +123,68 @@ public class BenchmarkController {
                 snapshot.doneCases()
         ));
     }
+
+        @Operation(summary = "Debug retrieval top-k cho tung cau hoi")
+        @GetMapping("/retrieval")
+        public ResponseEntity<RetrievalDebugResponse> debugRetrieval(
+        @RequestParam String questionId,
+        @RequestParam String strategy,
+        @RequestParam String embeddingModel
+        ) {
+        ManualTestCase testCase = manualTestSetLoader.loadTestCases().stream()
+                .filter(tc -> tc.id().equalsIgnoreCase(questionId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Khong tim thay questionId: " + questionId));
+
+        ChunkingStrategy chunkingStrategy = ChunkingStrategy.valueOf(strategy.trim().toUpperCase(Locale.ROOT));
+        EmbeddingModel model = EmbeddingModel.valueOf(embeddingModel.trim().toUpperCase(Locale.ROOT));
+
+        List<Float> questionEmbedding = embeddingRouter.embed(model, testCase.question());
+        List<RetrievedContext> contexts = vectorStoreService.search(
+                model, questionEmbedding, 5, chunkingStrategy, null, null, null
+        );
+
+        List<ContextDto> contextDtos = contexts.stream()
+                .map(c -> new ContextDto(
+                        c.sourceFileName(),
+                        c.content() == null ? "" : c.content().substring(0, Math.min(200, c.content().length())),
+                        c.score()
+                ))
+                .toList();
+
+        boolean sourceHit = contexts.stream()
+                .anyMatch(c -> c.sourceFileName() != null
+                        && c.sourceFileName().equalsIgnoreCase(testCase.expectedSource()));
+
+        boolean keywordHit = testCase.expectedKeywords() != null && contexts.stream()
+                .anyMatch(c -> c.content() != null && testCase.expectedKeywords().stream()
+                        .anyMatch(kw -> c.content().toLowerCase(Locale.ROOT).contains(kw.toLowerCase(Locale.ROOT))));
+
+        boolean retrievalHit = sourceHit && keywordHit;
+
+        return ResponseEntity.ok(new RetrievalDebugResponse(
+                testCase.id(),
+                testCase.expectedSource(),
+                testCase.expectedKeywords(),
+                contextDtos,
+                retrievalHit
+        ));
+}
+
+public record ContextDto(
+        String sourceFileName,
+        String contentPreview,
+        double score
+) {}
+
+public record RetrievalDebugResponse(
+        String questionId,
+        String expectedSource,
+        List<String> expectedKeywords,
+        List<ContextDto> contexts,
+        boolean retrievalHit
+) {}
 
     @Operation(summary = "Lay ket qua benchmark tong hop")
     @GetMapping("/results")

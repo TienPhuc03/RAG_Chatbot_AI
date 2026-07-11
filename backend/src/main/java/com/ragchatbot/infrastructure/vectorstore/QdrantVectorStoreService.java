@@ -1,11 +1,17 @@
 package com.ragchatbot.infrastructure.vectorstore;
 
-import static io.qdrant.client.ConditionFactory.matchKeyword;
-import static io.qdrant.client.PointIdFactory.id;
-import static io.qdrant.client.ValueFactory.nullValue;
-import static io.qdrant.client.ValueFactory.value;
-import static io.qdrant.client.VectorsFactory.vectors;
-import static io.qdrant.client.WithPayloadSelectorFactory.enable;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.ragchatbot.config.EmbeddingProperties;
@@ -17,7 +23,14 @@ import com.ragchatbot.domain.port.ChunkDraft;
 import com.ragchatbot.domain.port.RetrievedContext;
 import com.ragchatbot.domain.port.VectorStoreService;
 import com.ragchatbot.infrastructure.persistence.DocumentRepository;
+
+import static io.qdrant.client.ConditionFactory.matchKeyword;
+import static io.qdrant.client.PointIdFactory.id;
 import io.qdrant.client.QdrantClient;
+import static io.qdrant.client.ValueFactory.nullValue;
+import static io.qdrant.client.ValueFactory.value;
+import static io.qdrant.client.VectorsFactory.vectors;
+import static io.qdrant.client.WithPayloadSelectorFactory.enable;
 import io.qdrant.client.grpc.Collections.Distance;
 import io.qdrant.client.grpc.Collections.VectorParams;
 import io.qdrant.client.grpc.JsonWithInt.Value;
@@ -27,17 +40,6 @@ import io.qdrant.client.grpc.Points.ScoredPoint;
 import io.qdrant.client.grpc.Points.SearchPoints;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
 @Service
 public class QdrantVectorStoreService implements VectorStoreService {
@@ -117,7 +119,7 @@ public class QdrantVectorStoreService implements VectorStoreService {
             List<Float> embedding = embeddings.get(i);
             validateEmbedding(embeddingModel, embedding, i);
 
-            UUID pointId = pointId(documentId, chunk.chunkIndex());
+            UUID pointId = pointId(documentId, embeddingModel, chunkingStrategy, chunk.chunkIndex());
             points.add(PointStruct.newBuilder()
                     .setId(id(pointId))
                     .setVectors(vectors(embedding))
@@ -261,9 +263,16 @@ public class QdrantVectorStoreService implements VectorStoreService {
         );
     }
 
-    private UUID pointId(UUID documentId, int chunkIndex) {
-        return UUID.nameUUIDFromBytes((documentId + ":" + chunkIndex).getBytes(StandardCharsets.UTF_8));
-    }
+    private UUID pointId(
+        UUID documentId,
+        EmbeddingModel embeddingModel,
+        ChunkingStrategy chunkingStrategy,
+        int chunkIndex
+) {
+    String raw = documentId + ":" + embeddingModel.name() + ":"
+                + chunkingStrategy.name() + ":" + chunkIndex;
+    return UUID.nameUUIDFromBytes(raw.getBytes(StandardCharsets.UTF_8));
+}
 
     private void validateEmbedding(EmbeddingModel embeddingModel, List<Float> embedding, int index) {
         int expectedDimension = vectorSizeFor(embeddingModel);

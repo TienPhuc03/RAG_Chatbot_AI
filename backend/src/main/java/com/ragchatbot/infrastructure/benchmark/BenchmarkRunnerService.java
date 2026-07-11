@@ -1,5 +1,15 @@
 package com.ragchatbot.infrastructure.benchmark;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
 import com.ragchatbot.application.usecase.document.DocumentMaintenanceService;
 import com.ragchatbot.domain.enums.ChunkingStrategy;
 import com.ragchatbot.domain.enums.EmbeddingModel;
@@ -13,14 +23,6 @@ import com.ragchatbot.domain.port.RetrievedContext;
 import com.ragchatbot.domain.port.VectorStoreService;
 import com.ragchatbot.infrastructure.embedding.EmbeddingRouter;
 import com.ragchatbot.infrastructure.persistence.BenchmarkResultRepository;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 @Service
 public class BenchmarkRunnerService {
