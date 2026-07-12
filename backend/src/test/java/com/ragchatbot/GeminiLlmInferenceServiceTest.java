@@ -54,7 +54,7 @@ class GeminiLlmInferenceServiceTest {
                         "JAVA101",
                         "CH1",
                         "java-basic.pdf",
-                        3))
+                        3, null, null, null))
         );
 
         assertThat(answer.answer()).isEqualTo("Java la ngon ngu lap trinh huong doi tuong.");
@@ -106,7 +106,7 @@ class GeminiLlmInferenceServiceTest {
                         "JAVA101",
                         "CH1",
                         "fallback.pdf",
-                        5))
+                        5, null, null, null))
         );
 
         assertThat(answer.answer()).isEqualTo("Tra loi tu Ollama fallback.");

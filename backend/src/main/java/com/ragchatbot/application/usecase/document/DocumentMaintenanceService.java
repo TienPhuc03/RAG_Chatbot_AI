@@ -52,14 +52,17 @@ public class DocumentMaintenanceService {
 
     public boolean hasIndexedDocuments(String courseCode, String chapterCode) {
         if (courseCode == null || courseCode.isBlank()) {
-            return documentRepository.countByStatus(DocumentStatus.INDEXED) > 0;
+            return documentRepository.countByStatusAndConversationSessionIdIsNull(DocumentStatus.INDEXED) > 0;
         }
 
         if (chapterCode == null || chapterCode.isBlank()) {
-            return documentRepository.countByStatusAndCourseCode(DocumentStatus.INDEXED, courseCode.trim()) > 0;
+            return documentRepository.countByStatusAndCourseCodeAndConversationSessionIdIsNull(
+                    DocumentStatus.INDEXED,
+                    courseCode.trim()
+            ) > 0;
         }
 
-        return documentRepository.countByStatusAndCourseCodeAndChapterCode(
+        return documentRepository.countByStatusAndCourseCodeAndChapterCodeAndConversationSessionIdIsNull(
                 DocumentStatus.INDEXED,
                 courseCode.trim(),
                 chapterCode.trim()

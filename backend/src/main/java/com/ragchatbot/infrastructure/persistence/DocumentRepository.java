@@ -29,9 +29,22 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
 
     long countByStatus(DocumentStatus status);
 
+    long countByStatusAndConversationSessionIdIsNull(DocumentStatus status);
+
     long countByStatusAndCourseCode(DocumentStatus status, String courseCode);
 
+    long countByStatusAndCourseCodeAndConversationSessionIdIsNull(
+            DocumentStatus status,
+            String courseCode
+    );
+
     long countByStatusAndCourseCodeAndChapterCode(
+            DocumentStatus status,
+            String courseCode,
+            String chapterCode
+    );
+
+    long countByStatusAndCourseCodeAndChapterCodeAndConversationSessionIdIsNull(
             DocumentStatus status,
             String courseCode,
             String chapterCode

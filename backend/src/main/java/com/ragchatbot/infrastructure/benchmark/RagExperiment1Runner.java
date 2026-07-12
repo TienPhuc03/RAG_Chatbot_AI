@@ -21,15 +21,15 @@ public class RagExperiment1Runner implements ApplicationRunner {
 
         benchmarkRunnerService.runBenchmark(
                 "rag-1-fixed-size",
-                new BenchmarkRunnerService.BenchmarkConfig("FIXED_SIZE", "MULTILINGUAL_E5_BASE", "RAG")
+                new BenchmarkRunnerService.BenchmarkConfig("FIXED_SIZE", "GEMINI_EMBEDDING_001", "RAG", com.ragchatbot.domain.enums.BenchmarkMode.FULL_PIPELINE, java.util.UUID.randomUUID().toString(), 5)
         );
         benchmarkRunnerService.runBenchmark(
                 "rag-1-semantic",
-                new BenchmarkRunnerService.BenchmarkConfig("SEMANTIC", "MULTILINGUAL_E5_BASE", "RAG")
+                new BenchmarkRunnerService.BenchmarkConfig("SEMANTIC", "GEMINI_EMBEDDING_001", "RAG", com.ragchatbot.domain.enums.BenchmarkMode.FULL_PIPELINE, java.util.UUID.randomUUID().toString(), 5)
         );
         benchmarkRunnerService.runBenchmark(
                 "rag-1-hierarchical",
-                new BenchmarkRunnerService.BenchmarkConfig("HIERARCHICAL", "MULTILINGUAL_E5_BASE", "RAG")
+                new BenchmarkRunnerService.BenchmarkConfig("HIERARCHICAL", "GEMINI_EMBEDDING_001", "RAG", com.ragchatbot.domain.enums.BenchmarkMode.FULL_PIPELINE, java.util.UUID.randomUUID().toString(), 5)
         );
     }
 }

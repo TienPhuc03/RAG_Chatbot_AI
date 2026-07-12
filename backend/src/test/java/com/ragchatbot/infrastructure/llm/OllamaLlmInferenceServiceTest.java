@@ -55,7 +55,7 @@ class OllamaLlmInferenceServiceTest {
                         "RAG101",
                         "CH1",
                         "rag-notes.pdf",
-                        4))
+                        4, null, null, baseUrl))
         );
 
         assertThat(answer.answer()).isEqualTo("Day la cau tra loi tu Ollama.");

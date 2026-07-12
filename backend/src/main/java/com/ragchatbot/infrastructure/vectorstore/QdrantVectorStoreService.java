@@ -1,6 +1,7 @@
 package com.ragchatbot.infrastructure.vectorstore;
 
 import static io.qdrant.client.ConditionFactory.matchKeyword;
+import static io.qdrant.client.ConditionFactory.isEmpty;
 import static io.qdrant.client.PointIdFactory.id;
 import static io.qdrant.client.ValueFactory.nullValue;
 import static io.qdrant.client.ValueFactory.value;
@@ -117,7 +118,7 @@ public class QdrantVectorStoreService implements VectorStoreService {
             List<Float> embedding = embeddings.get(i);
             validateEmbedding(embeddingModel, embedding, i);
 
-            UUID pointId = pointId(documentId, chunk.chunkIndex());
+            UUID pointId = pointId(documentId, embeddingModel, chunkingStrategy, chunk.chunkIndex());
             points.add(PointStruct.newBuilder()
                     .setId(id(pointId))
                     .setVectors(vectors(embedding))
@@ -231,6 +232,8 @@ public class QdrantVectorStoreService implements VectorStoreService {
         }
         if (hasText(conversationSessionId)) {
             filterBuilder.addMust(matchKeyword(PAYLOAD_SESSION_ID, conversationSessionId));
+        } else {
+            filterBuilder.addMust(isEmpty(PAYLOAD_SESSION_ID));
         }
         if (hasText(courseCode)) {
             filterBuilder.addMust(matchKeyword(PAYLOAD_COURSE_CODE, courseCode));
@@ -241,28 +244,37 @@ public class QdrantVectorStoreService implements VectorStoreService {
         return filterBuilder.getMustCount() == 0 ? null : filterBuilder.build();
     }
 
-    private RetrievedContext toRetrievedContext(ScoredPoint point) {
+        private RetrievedContext toRetrievedContext(ScoredPoint point) {
         Map<String, Value> payload = point.getPayloadMap();
+
         UUID chunkId = uuidValue(payload, PAYLOAD_CHUNK_ID);
         UUID documentId = uuidValue(payload, PAYLOAD_DOCUMENT_ID);
+
+        // Trường hợp payload cũ chưa có chunk_id thì lấy UUID của point Qdrant.
         if (chunkId == null && point.hasId() && point.getId().hasUuid()) {
             chunkId = UUID.fromString(point.getId().getUuid());
         }
 
         return new RetrievedContext(
-                chunkId,
-                documentId,
+                chunkId,       // Tham số 1: chunkId
+                documentId,    // Tham số 2: documentId
                 stringValue(payload, PAYLOAD_CONTENT),
                 (double) point.getScore(),
                 stringValue(payload, PAYLOAD_COURSE_CODE),
                 stringValue(payload, PAYLOAD_CHAPTER_CODE),
                 stringValue(payload, PAYLOAD_SOURCE_FILE_NAME),
-                integerValue(payload, PAYLOAD_PAGE_NUMBER)
+                integerValue(payload, PAYLOAD_PAGE_NUMBER),
+                integerValue(payload, PAYLOAD_PAGE_NUMBER), // pageStart tạm dùng pageNumber
+                integerValue(payload, PAYLOAD_PAGE_NUMBER), // pageEnd tạm dùng pageNumber
+                null                                        // section chưa có metadata
         );
     }
-
-    private UUID pointId(UUID documentId, int chunkIndex) {
-        return UUID.nameUUIDFromBytes((documentId + ":" + chunkIndex).getBytes(StandardCharsets.UTF_8));
+    private UUID pointId(UUID documentId,EmbeddingModel embeddingModel, ChunkingStrategy chunkingStrategy, int chunkIndex) {
+        String raw = documentId
+                    + ":" + embeddingModel.name()
+                    + ":" + chunkingStrategy.name()
+                    + ":" + chunkIndex;
+        return UUID.nameUUIDFromBytes(raw.getBytes(StandardCharsets.UTF_8));
     }
 
     private void validateEmbedding(EmbeddingModel embeddingModel, List<Float> embedding, int index) {

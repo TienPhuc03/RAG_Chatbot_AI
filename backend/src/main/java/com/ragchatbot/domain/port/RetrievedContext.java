@@ -2,6 +2,8 @@ package com.ragchatbot.domain.port;
 
 import java.util.UUID;
 
+// import jakarta.persistence.criteria.CriteriaBuilder.In;
+
 public record RetrievedContext(
         UUID chunkId,
         UUID documentId,
@@ -10,7 +12,10 @@ public record RetrievedContext(
         String courseCode,
         String chapterCode,
         String sourceFileName,
-        Integer pageNumber
+        Integer pageNumber,
+        Integer pageStart,
+        Integer pageEnd,
+        String section
 ) {
 
     public CitationReference toCitationReference() {

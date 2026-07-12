@@ -43,12 +43,12 @@ class BenchmarkRunnerServiceTest {
         BenchmarkCostEstimator benchmarkCostEstimator = mock(BenchmarkCostEstimator.class);
 
         when(testSetLoader.loadTestCases()).thenReturn(List.of(
-                new TestCase("Q001", "Cau hoi", "Dap an", "DEFINITION")
+                new TestCase("Q001", "Cau hoi", "Dap an", "DEFINITION", null, List.of(), List.of(), false)
         ));
         when(embeddingRouter.embed(EmbeddingModel.BGE_M3, "Cau hoi"))
                 .thenReturn(List.of(0.1f, 0.2f));
         when(vectorStoreService.search(any(), any(), anyInt(), any(), any(), any(), any())).thenReturn(List.of(
-                new RetrievedContext(UUID.randomUUID(), UUID.randomUUID(), "Dap an", 0.9, "DB101", "CH1", "db101.pdf", 2)
+                new RetrievedContext(UUID.randomUUID(), UUID.randomUUID(), "Dap an", 0.9, "DB101", "CH1", "db101.pdf", 2, null, null, null)
         ));
         when(llmInferenceService.generateAnswer(any(), any(), any())).thenReturn(
                 new LlmAnswer("Dap an", List.of(), true)
@@ -84,7 +84,10 @@ class BenchmarkRunnerServiceTest {
         service.runBenchmark("job-1", new BenchmarkRunnerService.BenchmarkConfig(
                 "SEMANTIC",
                 "BGE_M3",
-                "RAG"
+                "RAG",
+                com.ragchatbot.domain.enums.BenchmarkMode.FULL_PIPELINE,
+                java.util.UUID.randomUUID().toString(),
+                5
         ));
 
         BenchmarkJobRegistry.JobSnapshot snapshot = benchmarkJobRegistry.get("job-1");
@@ -121,8 +124,8 @@ class BenchmarkRunnerServiceTest {
         DocumentMaintenanceService documentMaintenanceService = mock(DocumentMaintenanceService.class);
         BenchmarkCostEstimator benchmarkCostEstimator = mock(BenchmarkCostEstimator.class);
 
-        when(testSetLoader.loadTestCases()).thenReturn(List.of(
-                new TestCase("Q001", "Cau hoi fine-tune", "Dap an fine-tune", "DEFINITION")
+        when(testSetLoader.loadTestCases()).thenReturn(List.of( //thay đổi phía testcase để phù hợp với fine-tune
+                new TestCase("Q001", "Cau hoi fine-tune", "Dap an fine-tune", "DEFINITION", null, List.of(), List.of(), false)
         ));
         when(fineTunedInferenceService.generateAnswer("Cau hoi fine-tune"))
                 .thenReturn("Tra loi tu model fine-tuned");
@@ -154,8 +157,11 @@ class BenchmarkRunnerServiceTest {
         benchmarkJobRegistry.register("job-ft", "test", 1);
         service.runBenchmark("job-ft", new BenchmarkRunnerService.BenchmarkConfig(
                 "SEMANTIC",
-                "GEMINI_EMBEDDING_001",
-                "FINETUNE"
+                "BGE_M3",
+                "FINETUNE",
+                com.ragchatbot.domain.enums.BenchmarkMode.FULL_PIPELINE,
+                java.util.UUID.randomUUID().toString(),
+                5
         ));
 
         verify(fineTunedInferenceService).generateAnswer("Cau hoi fine-tune");
