@@ -1,0 +1,16 @@
+﻿ chunking_strategy |   embedding_model    | document_count | chunk_count 
+-------------------+----------------------+----------------+-------------
+ FIXED_SIZE        | BGE_M3               |              1 |          15
+ FIXED_SIZE        | GEMINI_EMBEDDING_001 |              1 |          15
+ FIXED_SIZE        | MULTILINGUAL_E5_BASE |              1 |          15
+ FIXED_SIZE        | PHOBERT_BASE         |              1 |          15
+ HIERARCHICAL      | BGE_M3               |              1 |         276
+ HIERARCHICAL      | GEMINI_EMBEDDING_001 |              2 |         361
+ HIERARCHICAL      | MULTILINGUAL_E5_BASE |              1 |         276
+ HIERARCHICAL      | PHOBERT_BASE         |              1 |         276
+ SEMANTIC          | BGE_M3               |              7 |        1109
+ SEMANTIC          | GEMINI_EMBEDDING_001 |             10 |        1011
+ SEMANTIC          | MULTILINGUAL_E5_BASE |              5 |         741
+ SEMANTIC          | PHOBERT_BASE         |              5 |         741
+(12 rows)
+
