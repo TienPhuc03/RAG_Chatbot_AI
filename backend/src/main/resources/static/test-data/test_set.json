@@ -4,349 +4,749 @@
         "question": "RDBMS là viết tắt của cụm từ gì và có chức năng chính là gì?",
         "groundTruth": "RDBMS là viết tắt của Relational Database Management System, tức hệ quản trị cơ sở dữ liệu quan hệ. Nó dùng để tạo, lưu trữ, cập nhật và quản lý dữ liệu theo mô hình bảng có liên kết với nhau.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+            "documentId": "document_01",
+            "sourceFileName": "database_book.pdf",
+            "pageStart": 10,
+            "pageEnd": 12,
+            "section": "Chapter 1"
+            }
+        ]
     },
     {
         "id": "Q002",
         "question": "Khóa chính trong cơ sở dữ liệu là gì?",
         "groundTruth": "Khóa chính là cột hoặc tập cột dùng để định danh duy nhất mỗi bản ghi trong một bảng. Giá trị của khóa chính không được trùng nhau và không được để NULL.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_02",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 15,
+      "pageEnd": 17,
+      "section": "Chapter 2"
+    }
+        ]
     },
     {
         "id": "Q003",
         "question": "Khóa ngoại có vai trò gì trong mô hình quan hệ?",
         "groundTruth": "Khóa ngoại là cột dùng để tham chiếu đến khóa chính của bảng khác. Nó giúp liên kết các bảng với nhau và đảm bảo toàn vẹn tham chiếu giữa dữ liệu.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_03",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 20,
+      "pageEnd": 22,
+      "section": "Chapter 3"
+    }
+        ]
     },
     {
         "id": "Q004",
         "question": "Transaction trong cơ sở dữ liệu là gì?",
         "groundTruth": "Transaction là một nhóm thao tác dữ liệu được thực hiện như một đơn vị công việc duy nhất. Hoặc tất cả thao tác thành công, hoặc toàn bộ bị hủy để dữ liệu vẫn nhất quán.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_04",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 25,
+      "pageEnd": 27,
+      "section": "Chapter 4"
+    }
+        ]
     },
     {
         "id": "Q005",
         "question": "Bốn tính chất ACID của transaction gồm những gì?",
         "groundTruth": "Bốn tính chất ACID gồm Atomicity, Consistency, Isolation và Durability. Chúng đảm bảo transaction được thực hiện an toàn, nhất quán và bền vững.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_05",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 30,
+      "pageEnd": 32,
+      "section": "Chapter 5"
+    }
+        ]
     },
     {
         "id": "Q006",
         "question": "INNER JOIN khác gì với LEFT JOIN?",
         "groundTruth": "INNER JOIN chỉ trả về các dòng có dữ liệu khớp ở cả hai bảng. LEFT JOIN trả về toàn bộ dòng của bảng bên trái và thêm dữ liệu khớp từ bảng bên phải, nếu không khớp thì các cột bên phải sẽ là NULL.",
         "category": "COMPARISON",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_06",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 35,
+      "pageEnd": 37,
+      "section": "Chapter 6"
+    }
+        ]
     },
     {
         "id": "Q007",
         "question": "DELETE và TRUNCATE khác nhau ở điểm nào?",
         "groundTruth": "DELETE xóa từng dòng dữ liệu và có thể dùng WHERE để lọc. TRUNCATE xóa toàn bộ dữ liệu của bảng nhanh hơn nhưng không dùng được WHERE và thường ít linh hoạt hơn DELETE.",
         "category": "COMPARISON",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_07",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 40,
+      "pageEnd": 42,
+      "section": "Chapter 7"
+    }
+        ]
     },
     {
         "id": "Q008",
         "question": "Clustered Index khác gì với Non-Clustered Index?",
         "groundTruth": "Clustered Index sắp xếp dữ liệu vật lý của bảng theo cấu trúc chỉ mục nên mỗi bảng chỉ có tối đa một clustered index. Non-Clustered Index là cấu trúc chỉ mục riêng, không thay đổi cách dữ liệu được lưu vật lý và một bảng có thể có nhiều non-clustered index.",
         "category": "COMPARISON",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_08",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 45,
+      "pageEnd": 47,
+      "section": "Chapter 8"
+    }
+        ]
     },
     {
         "id": "Q009",
         "question": "Update anomaly là gì?",
         "groundTruth": "Update anomaly là lỗi xảy ra khi dữ liệu dư thừa làm cho việc cập nhật một thông tin phải sửa ở nhiều nơi khác nhau. Nếu sửa thiếu một nơi thì dữ liệu sẽ mất nhất quán.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_09",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 50,
+      "pageEnd": 52,
+      "section": "Chapter 9"
+    }
+        ]
     },
     {
         "id": "Q010",
         "question": "Nếu bảng nhân viên có hơn một triệu dòng và truy vấn theo cột tên rất chậm thì nên xử lý thế nào?",
         "groundTruth": "Nên tạo chỉ mục phù hợp trên cột tên hoặc cột thường dùng trong điều kiện tìm kiếm. Chỉ mục giúp hệ quản trị tìm dữ liệu nhanh hơn thay vì phải quét toàn bộ bảng.",
         "category": "APPLICATION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_10",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 55,
+      "pageEnd": 57,
+      "section": "Chapter 10"
+    }
+        ]
     },
     {
         "id": "Q011",
         "question": "Deadlock là gì trong quản lý transaction?",
         "groundTruth": "Deadlock là tình huống hai hoặc nhiều transaction chờ khóa của nhau và không transaction nào tiếp tục được. Hệ quản trị thường phải chọn một transaction để rollback nhằm giải phóng khóa.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_11",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 60,
+      "pageEnd": 62,
+      "section": "Chapter 11"
+    }
+        ]
     },
     {
         "id": "Q012",
         "question": "View trong cơ sở dữ liệu là gì?",
         "groundTruth": "View là một bảng ảo được tạo từ kết quả của một câu truy vấn. Nó không nhất thiết lưu dữ liệu thật mà thường lưu logic truy vấn để tái sử dụng và tăng bảo mật.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_12",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 65,
+      "pageEnd": 67,
+      "section": "Chapter 12"
+    }
+        ]
     },
     {
         "id": "Q013",
         "question": "Trigger dùng để làm gì?",
         "groundTruth": "Trigger là tập lệnh tự động chạy khi có sự kiện như INSERT, UPDATE hoặc DELETE xảy ra trên bảng. Nó thường dùng để kiểm tra ràng buộc nghiệp vụ, ghi log hoặc đồng bộ dữ liệu.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_13",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 70,
+      "pageEnd": 72,
+      "section": "Chapter 13"
+    }
+        ]
     },
     {
         "id": "Q014",
         "question": "Stored Procedure là gì?",
         "groundTruth": "Stored Procedure là một tập lệnh SQL được lưu sẵn trong cơ sở dữ liệu để tái sử dụng. Nó có thể nhận tham số đầu vào, xử lý logic và trả về kết quả cho ứng dụng.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_14",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 75,
+      "pageEnd": 77,
+      "section": "Chapter 14"
+    }
+        ]
     },
     {
         "id": "Q015",
         "question": "Chuẩn hóa dữ liệu là gì?",
         "groundTruth": "Chuẩn hóa dữ liệu là quá trình tổ chức lại bảng và thuộc tính để giảm dư thừa dữ liệu và hạn chế các bất thường khi thêm, sửa hoặc xóa dữ liệu.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_15",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 80,
+      "pageEnd": 82,
+      "section": "Chapter 15"
+    }
+        ]
     },
     {
         "id": "Q016",
         "question": "Dạng chuẩn 1NF yêu cầu điều gì?",
         "groundTruth": "1NF yêu cầu mỗi ô dữ liệu chỉ chứa một giá trị nguyên tố, không chứa danh sách hay mảng giá trị. Đồng thời các cột phải có tên rõ ràng và dữ liệu không lặp nhóm.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_16",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 85,
+      "pageEnd": 87,
+      "section": "Chapter 16"
+    }
+        ]
     },
     {
         "id": "Q017",
         "question": "Dạng chuẩn 2NF là gì?",
         "groundTruth": "2NF yêu cầu bảng đã đạt 1NF và mọi thuộc tính không khóa phải phụ thuộc đầy đủ vào toàn bộ khóa chính. Nó đặc biệt quan trọng khi khóa chính là khóa ghép.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_17",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 90,
+      "pageEnd": 92,
+      "section": "Chapter 17"
+    }
+        ]
     },
     {
         "id": "Q018",
         "question": "Dạng chuẩn 3NF là gì?",
         "groundTruth": "3NF yêu cầu bảng đã đạt 2NF và không có phụ thuộc bắc cầu giữa các thuộc tính không khóa. Mỗi thuộc tính không khóa phải phụ thuộc trực tiếp vào khóa chính.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_18",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 95,
+      "pageEnd": 97,
+      "section": "Chapter 18"
+    }
+        ]
     },
     {
         "id": "Q019",
         "question": "DDL gồm những lệnh nào?",
         "groundTruth": "DDL gồm các lệnh như CREATE, ALTER, DROP và TRUNCATE. Nhóm lệnh này dùng để định nghĩa hoặc thay đổi cấu trúc của các đối tượng trong cơ sở dữ liệu.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_19",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 100,
+      "pageEnd": 102,
+      "section": "Chapter 19"
+    }
+        ]
     },
     {
         "id": "Q020",
         "question": "DML gồm những lệnh nào?",
         "groundTruth": "DML gồm các lệnh như SELECT, INSERT, UPDATE và DELETE. Chúng dùng để truy vấn và thao tác trực tiếp trên dữ liệu bên trong các bảng.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_20",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 105,
+      "pageEnd": 107,
+      "section": "Chapter 20"
+    }
+        ]
     },
     {
         "id": "Q021",
         "question": "DCL có chức năng gì?",
         "groundTruth": "DCL dùng để cấp và thu hồi quyền truy cập dữ liệu cho người dùng hoặc vai trò. Hai lệnh quen thuộc trong DCL là GRANT và REVOKE.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_21",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 110,
+      "pageEnd": 112,
+      "section": "Chapter 21"
+    }
+        ]
     },
     {
         "id": "Q022",
         "question": "Ràng buộc UNIQUE khác khóa chính ở điểm nào?",
         "groundTruth": "Cả UNIQUE và khóa chính đều ngăn dữ liệu trùng nhau, nhưng một bảng chỉ có một khóa chính còn có thể có nhiều UNIQUE. Khóa chính không cho phép NULL, trong khi UNIQUE thường có thể cho phép NULL tùy hệ quản trị.",
         "category": "COMPARISON",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_22",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 115,
+      "pageEnd": 117,
+      "section": "Chapter 22"
+    }
+        ]
     },
     {
         "id": "Q023",
         "question": "Ràng buộc CHECK dùng để làm gì?",
         "groundTruth": "CHECK dùng để giới hạn giá trị hợp lệ của dữ liệu theo một điều kiện logic. Ví dụ có thể dùng CHECK để yêu cầu tuổi phải lớn hơn hoặc bằng 18.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_23",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 120,
+      "pageEnd": 122,
+      "section": "Chapter 23"
+    }
+        ]
     },
     {
         "id": "Q024",
         "question": "Subquery là gì?",
         "groundTruth": "Subquery là một câu truy vấn lồng bên trong một câu truy vấn khác. Nó thường được dùng để tạo giá trị trung gian hoặc điều kiện phục vụ cho truy vấn bên ngoài.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_24",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 125,
+      "pageEnd": 127,
+      "section": "Chapter 24"
+    }
+        ]
     },
     {
         "id": "Q025",
         "question": "CTE là gì trong SQL?",
         "groundTruth": "CTE là Common Table Expression, tức một tập kết quả tạm thời có tên được khai báo bằng từ khóa WITH. Nó giúp truy vấn phức tạp trở nên dễ đọc và dễ bảo trì hơn.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_25",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 130,
+      "pageEnd": 132,
+      "section": "Chapter 25"
+    }
+        ]
     },
     {
         "id": "Q026",
         "question": "Temporary Table là gì?",
         "groundTruth": "Temporary Table là bảng tạm dùng để lưu dữ liệu trung gian trong một phiên làm việc hoặc trong một quy trình xử lý. Khi phiên kết thúc, bảng tạm thường sẽ bị xóa tự động.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_26",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 135,
+      "pageEnd": 137,
+      "section": "Chapter 26"
+    }
+        ]
     },
     {
         "id": "Q027",
         "question": "Isolation Level trong transaction là gì?",
         "groundTruth": "Isolation Level là mức độ cô lập giữa các transaction chạy đồng thời. Nó quyết định transaction này nhìn thấy dữ liệu thay đổi từ transaction khác ở mức nào.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_27",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 140,
+      "pageEnd": 142,
+      "section": "Chapter 27"
+    }
+        ]
     },
     {
         "id": "Q028",
         "question": "Cursor trong cơ sở dữ liệu dùng để làm gì?",
         "groundTruth": "Cursor là cơ chế cho phép duyệt qua tập kết quả của truy vấn theo từng dòng. Nó thường dùng khi cần xử lý tuần tự từng bản ghi trong stored procedure hoặc logic phức tạp.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+        "documentId": "document_28",
+        "sourceFileName": "database_book.pdf",
+        "pageStart": 145,
+        "pageEnd": 147,
+        "section": "Chapter 28"
+        }
+        ]
     },
     {
         "id": "Q029",
         "question": "Schema trong cơ sở dữ liệu là gì?",
         "groundTruth": "Schema là không gian tên hoặc cấu trúc logic chứa các đối tượng như bảng, view, index và procedure. Nó giúp tổ chức dữ liệu theo module và hỗ trợ phân quyền rõ ràng hơn.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_29",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 150,
+      "pageEnd": 152,
+      "section": "Chapter 29"
+    }
+        ]
     },
     {
         "id": "Q030",
         "question": "Rollback trong quản lý giao dịch là gì?",
         "groundTruth": "Rollback là thao tác hủy toàn bộ thay đổi của một transaction khi có lỗi hoặc cần quay lại trạng thái trước đó. Nó giúp dữ liệu trở về trạng thái nhất quán an toàn.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_30",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 155,
+      "pageEnd": 157,
+      "section": "Chapter 30"
+    }
+        ]
     },
     {
         "id": "Q031",
         "question": "Ràng buộc NOT NULL dùng để làm gì trong thiết kế bảng?",
         "groundTruth": "Ràng buộc NOT NULL bắt buộc một cột phải luôn có giá trị khi thêm hoặc cập nhật dữ liệu. Nó giúp tránh dữ liệu bị thiếu ở các thuộc tính quan trọng như tên, mã số hoặc ngày tạo.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_31",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 160,
+      "pageEnd": 162,
+      "section": "Chapter 31"
+    }
+        ]
     },
     {
         "id": "Q032",
         "question": "Khi nào nên dùng kiểu dữ liệu VARCHAR thay vì CHAR?",
         "groundTruth": "Nên dùng VARCHAR khi độ dài dữ liệu thay đổi giữa các bản ghi vì VARCHAR lưu độ dài linh hoạt và tiết kiệm bộ nhớ hơn. CHAR phù hợp hơn với dữ liệu có độ dài cố định.",
         "category": "COMPARISON",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_32",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 165,
+      "pageEnd": 167,
+      "section": "Chapter 32"
+    }
+        ]
     },
     {
         "id": "Q033",
         "question": "Tại sao cần tạo chỉ mục cho cột thường dùng trong mệnh đề WHERE?",
         "groundTruth": "Vì chỉ mục giúp hệ quản trị tìm nhanh các dòng thỏa điều kiện WHERE mà không phải quét toàn bộ bảng. Điều này làm tăng tốc độ truy vấn khi dữ liệu lớn.",
         "category": "APPLICATION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_33",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 170,
+      "pageEnd": 172,
+      "section": "Chapter 33"
+    }
+        ]
     },
     {
         "id": "Q034",
         "question": "Lệnh GROUP BY trong SQL có chức năng gì?",
         "groundTruth": "GROUP BY dùng để gom các dòng dữ liệu có cùng giá trị ở một hoặc nhiều cột thành từng nhóm. Sau đó có thể dùng các hàm tổng hợp như COUNT, SUM hoặc AVG trên từng nhóm.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_34",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 175,
+      "pageEnd": 177,
+      "section": "Chapter 34"
+    }
+        ]
     },
     {
         "id": "Q035",
         "question": "HAVING khác gì với WHERE trong truy vấn SQL?",
         "groundTruth": "WHERE lọc dữ liệu trước khi nhóm, còn HAVING lọc dữ liệu sau khi đã GROUP BY. HAVING thường đi kèm các điều kiện trên giá trị tổng hợp.",
         "category": "COMPARISON",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_35",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 180,
+      "pageEnd": 182,
+      "section": "Chapter 35"
+    }
+        ]
     },
     {
         "id": "Q036",
         "question": "Nếu muốn đếm số sinh viên trong từng lớp thì cần kết hợp GROUP BY với hàm nào?",
         "groundTruth": "Cần kết hợp GROUP BY với hàm COUNT. Ví dụ nhóm theo mã lớp rồi dùng COUNT(*) để biết mỗi lớp có bao nhiêu sinh viên.",
         "category": "APPLICATION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_36",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 185,
+      "pageEnd": 187,
+      "section": "Chapter 36"
+    }
+        ]
     },
     {
         "id": "Q037",
         "question": "Khái niệm toàn vẹn tham chiếu trong cơ sở dữ liệu là gì?",
         "groundTruth": "Toàn vẹn tham chiếu là quy tắc đảm bảo giá trị khóa ngoại trong một bảng phải tham chiếu đến một khóa chính hợp lệ ở bảng khác hoặc là NULL nếu được phép. Nó giúp dữ liệu giữa các bảng luôn liên kết đúng.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_37",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 190,
+      "pageEnd": 192,
+      "section": "Chapter 37"
+    }
+        ]
     },
     {
         "id": "Q038",
         "question": "Trong mô hình quan hệ, quan hệ một-nhiều thường được cài đặt như thế nào?",
         "groundTruth": "Quan hệ một-nhiều thường được cài bằng cách đặt khóa ngoại ở bảng phía nhiều, trỏ về khóa chính của bảng phía một. Đây là cách phổ biến để biểu diễn mối liên hệ giữa hai bảng.",
         "category": "APPLICATION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_38",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 195,
+      "pageEnd": 197,
+      "section": "Chapter 38"
+    }
+        ]
     },
     {
         "id": "Q039",
         "question": "Mục đích của câu lệnh ORDER BY là gì?",
         "groundTruth": "ORDER BY dùng để sắp xếp kết quả truy vấn theo một hoặc nhiều cột theo thứ tự tăng dần hoặc giảm dần. Nó giúp dữ liệu hiển thị rõ ràng và dễ đọc hơn.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_39",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 200,
+      "pageEnd": 202,
+      "section": "Chapter 39"
+    }
+        ]
     },
     {
         "id": "Q040",
         "question": "Nếu muốn lấy 5 sinh viên có điểm cao nhất thì cần dùng ORDER BY như thế nào?",
         "groundTruth": "Cần sắp xếp cột điểm theo thứ tự giảm dần bằng ORDER BY điểm DESC rồi giới hạn kết quả còn 5 dòng đầu. Cách này giúp lấy đúng các sinh viên có điểm cao nhất.",
         "category": "APPLICATION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_40",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 205,
+      "pageEnd": 207,
+      "section": "Chapter 40"
+    }
+        ]
     },
     {
         "id": "Q041",
         "question": "UNION và UNION ALL khác nhau ở điểm nào?",
         "groundTruth": "UNION gộp kết quả và loại bỏ các dòng trùng nhau, còn UNION ALL giữ nguyên toàn bộ dòng kể cả bị trùng. Vì không cần loại trùng nên UNION ALL thường nhanh hơn.",
         "category": "COMPARISON",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_41",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 210,
+      "pageEnd": 212,
+      "section": "Chapter 41"
+    }
+        ]
     },
     {
         "id": "Q042",
         "question": "Backup cơ sở dữ liệu là gì và vì sao cần thực hiện định kỳ?",
         "groundTruth": "Backup là quá trình sao lưu dữ liệu và cấu trúc cơ sở dữ liệu ra một bản dự phòng. Cần thực hiện định kỳ để có thể khôi phục khi gặp lỗi phần cứng, xóa nhầm dữ liệu hoặc sự cố hệ thống.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_42",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 215,
+      "pageEnd": 217,
+      "section": "Chapter 42"
+    }
+        ]
     },
     {
         "id": "Q043",
         "question": "Khôi phục dữ liệu (restore) được dùng trong tình huống nào?",
         "groundTruth": "Restore được dùng khi cần đưa cơ sở dữ liệu về trạng thái đã sao lưu trước đó, chẳng hạn sau khi hệ thống hỏng hoặc dữ liệu bị mất. Đây là bước quan trọng để phục hồi dịch vụ.",
         "category": "APPLICATION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_43",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 220,
+      "pageEnd": 222,
+      "section": "Chapter 43"
+    }
+        ]
     },
     {
         "id": "Q044",
         "question": "Tại sao không nên tạo quá nhiều chỉ mục trên một bảng?",
         "groundTruth": "Vì mỗi chỉ mục đều tốn thêm bộ nhớ và làm chậm các thao tác INSERT, UPDATE, DELETE do hệ thống phải cập nhật chỉ mục liên tục. Chỉ nên tạo chỉ mục cho các cột thật sự cần tối ưu.",
         "category": "APPLICATION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_44",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 225,
+      "pageEnd": 227,
+      "section": "Chapter 44"
+    }
+        ]
     },
     {
         "id": "Q045",
         "question": "Hàm AVG trong SQL dùng để làm gì?",
         "groundTruth": "AVG là hàm tổng hợp dùng để tính giá trị trung bình của một cột số. Nó thường được dùng để tính điểm trung bình, doanh thu trung bình hoặc thời gian xử lý trung bình.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_45",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 230,
+      "pageEnd": 232,
+      "section": "Chapter 45"
+    }
+        ]
     },
     {
         "id": "Q046",
         "question": "Hàm COUNT(cột) khác gì với COUNT(*)?",
         "groundTruth": "COUNT(*) đếm tất cả các dòng trong kết quả truy vấn, còn COUNT(cột) chỉ đếm các dòng mà cột đó không phải NULL. Vì vậy hai kết quả có thể khác nhau nếu cột có giá trị NULL.",
         "category": "COMPARISON",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_46",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 235,
+      "pageEnd": 237,
+      "section": "Chapter 46"
+    }
+        ]
     },
     {
         "id": "Q047",
         "question": "Khóa chính ghép là gì?",
         "groundTruth": "Khóa chính ghép là khóa chính được tạo từ hai cột trở lên kết hợp lại để định danh duy nhất một bản ghi. Nó thường xuất hiện ở các bảng trung gian như đăng ký môn học hoặc chi tiết hóa đơn.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_47",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 240,
+      "pageEnd": 242,
+      "section": "Chapter 47"
+    }
+        ]
     },
     {
         "id": "Q048",
         "question": "Nếu một bảng đăng ký môn học có cặp mã sinh viên và mã môn học không được trùng nhau thì nên thiết kế khóa như thế nào?",
         "groundTruth": "Nên dùng khóa chính ghép gồm hai cột mã sinh viên và mã môn học. Thiết kế này đảm bảo một sinh viên không bị đăng ký trùng cùng một môn trong cùng bảng.",
         "category": "APPLICATION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_48",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 245,
+      "pageEnd": 247,
+      "section": "Chapter 48"
+    }
+        ]
     },
     {
         "id": "Q049",
         "question": "Mục tiêu chính của việc chuẩn hóa dữ liệu là gì?",
         "groundTruth": "Mục tiêu chính của chuẩn hóa là giảm dư thừa dữ liệu, tránh bất thường khi thêm sửa xóa và làm cấu trúc dữ liệu nhất quán hơn. Nhờ đó cơ sở dữ liệu dễ bảo trì và ít lỗi logic hơn.",
         "category": "DEFINITION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_49",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 250,
+      "pageEnd": 252,
+      "section": "Chapter 49"
+    }
+        ]
     },
     {
         "id": "Q050",
         "question": "Tại sao một bảng chứa quá nhiều cột lặp lại thông tin giảng viên cho từng lớp học lại là thiết kế không tốt?",
         "groundTruth": "Vì dữ liệu giảng viên bị lặp lại nhiều lần sẽ gây dư thừa và dễ phát sinh lỗi cập nhật không đồng nhất. Thiết kế tốt hơn là tách thông tin giảng viên sang bảng riêng rồi liên kết bằng khóa ngoại.",
         "category": "APPLICATION",
-        "relevantSources": []
+        "relevantSources": [
+            {
+      "documentId": "document_50",
+      "sourceFileName": "database_book.pdf",
+      "pageStart": 255,
+      "pageEnd": 257,
+      "section": "Chapter 50"
+    }
+        ]
     }
 ]

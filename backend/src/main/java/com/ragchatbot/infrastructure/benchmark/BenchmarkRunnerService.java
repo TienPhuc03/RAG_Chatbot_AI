@@ -14,7 +14,6 @@ import com.ragchatbot.domain.port.RetrievedContext;
 import com.ragchatbot.domain.port.VectorStoreService;
 import com.ragchatbot.infrastructure.embedding.EmbeddingRouter;
 import com.ragchatbot.infrastructure.persistence.BenchmarkResultRepository;
-// import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -71,19 +70,18 @@ public class BenchmarkRunnerService {
             ExperimentType experimentType = ExperimentType.valueOf(config.experimentType());
             ChunkingStrategy chunkingStrategy = parseChunkingStrategy(config.strategy());
             EmbeddingModel embeddingModel = parseEmbeddingModel(config.embeddingModel());
-            
-            // ... (Giữ nguyên đoạn check hasIndexedDocumentsForBenchmark) ...
 
             for (int i = 0; i < testCases.size(); i++) {
                 TestCase testCase = testCases.get(i);
                 
-                // TODO: Bổ sung logic kiểm tra resume ở đây bằng repository.existsCompleted(...)[cite: 3]
                 String configKey = config.strategy() + ":" + config.embeddingModel() + ":" + config.topK();
 
                 // Kiểm tra xem câu hỏi này đã được chấm xong ở lần chạy trước chưa
-                if (benchmarkResultRepository.existsByRunIdAndQuestionIdAndConfigKeyAndItemStatus(
-                        config.runId(), testCase.id(), configKey, "COMPLETED")) {
-                    continue; // Bỏ qua, không chạy lại để tiết kiệm thời gian và chi phí
+                boolean exists = benchmarkResultRepository.existsByRunIdAndQuestionIdAndConfigKeyAndItemStatus(
+                        config.runId(), testCase.id(), configKey, "COMPLETED");
+                
+                if (exists) {
+                    continue; 
                 }
 
                 List<RetrievedContext> retrievedContexts = Collections.emptyList();
@@ -124,7 +122,7 @@ public class BenchmarkRunnerService {
                 benchmarkResult.setEmbeddingLatencyMs(embeddingMs);
                 benchmarkResult.setSearchLatencyMs(searchMs);
 
-                // NGẮT LUỒNG NẾU LÀ RQ1 / RQ2[cite: 3]
+                // NGẮT LUỒNG NẾU LÀ RETRIEVAL_ONLY
                 if (config.benchmarkMode() != com.ragchatbot.domain.enums.BenchmarkMode.RETRIEVAL_ONLY) {
                     
                     // ==========================================
@@ -156,12 +154,24 @@ public class BenchmarkRunnerService {
                 }
 
                 benchmarkResult.setItemStatus("COMPLETED");
-                benchmarkResultRepository.save(benchmarkResult);
-                benchmarkJobRegistry.updateProgress(jobId, i + 1);
+
+                // --- PHẦN BẮT LỖI MỚI ---
+                try {
+                    System.out.println("DEBUG: Đang chuẩn bị lưu kết quả cho ID: " + testCase.id());
+                    benchmarkResultRepository.save(benchmarkResult);
+                    System.out.println("DEBUG: LƯU THÀNH CÔNG ID: " + testCase.id());
+                    benchmarkJobRegistry.updateProgress(jobId, i + 1);
+                } catch (Exception e) {
+                    System.err.println("!!! LỖI NGHIÊM TRỌNG KHI LƯU ID " + testCase.id() + ": " + e.getMessage());
+                    e.printStackTrace();
+                    throw new RuntimeException("Lưu dữ liệu thất bại tại ID: " + testCase.id(), e);
+                }
             }
 
             benchmarkJobRegistry.markCompleted(jobId);
         } catch (Exception ex) {
+            System.err.println("!!! LỖI TỔNG THỂ KHI CHẠY JOB: " + ex.getMessage());
+            ex.printStackTrace();
             benchmarkJobRegistry.markFailed(jobId, simplifyErrorMessage(ex));
         }
     }
@@ -206,69 +216,65 @@ public class BenchmarkRunnerService {
 
         return testCase.relevantSources().stream().anyMatch(src -> 
             retrievedContexts.stream().anyMatch(ctx -> {
-                // Kiểm tra trùng Document ID
                 if (!src.documentId().equals(ctx.documentId().toString())) return false;
                 
-                // Kiểm tra Overlap số trang (Nếu có)
                 if (ctx.pageStart() != null && ctx.pageEnd() != null && src.pageStart() != null && src.pageEnd() != null) {
                     return ctx.pageStart() <= src.pageEnd() && ctx.pageEnd() >= src.pageStart();
                 }
                 
-                // Fallback: Kiểm tra trùng Section
                 if (ctx.section() != null && src.section() != null) {
                     String ctxSec = ctx.section().toLowerCase(Locale.ROOT).trim();
                     String srcSec = src.section().toLowerCase(Locale.ROOT).trim();
                     return ctxSec.contains(srcSec) || srcSec.contains(ctxSec);
                 }
-                return true; // Trùng DocumentId nhưng không có page/section để đối chiếu chi tiết hơn
+                return true; 
             })
         );
     }
+    
     private long elapsedMillis(long startedAtNanos) {
         return Math.max(0L, (System.nanoTime() - startedAtNanos) / 1_000_000L);
     }
-        // Hàm này gọi isRelevant cho từng chunk và trả về các metric
-        public RetrievalMetrics evaluate(TestCase tc, List<RetrievedContext> contexts, int topK) {
-            List<Integer> relevantRanks = new ArrayList<>();
-            for (int i = 0; i < contexts.size(); i++) {
-                if (isRelevant(tc, contexts.get(i))) {
-                    relevantRanks.add(i + 1); // Rank = index + 1
-                }
+    
+    public RetrievalMetrics evaluate(TestCase tc, List<RetrievedContext> contexts, int topK) {
+        List<Integer> relevantRanks = new ArrayList<>();
+        for (int i = 0; i < contexts.size(); i++) {
+            if (isRelevant(tc, contexts.get(i))) {
+                relevantRanks.add(i + 1);
+            }
+        }
+
+        double hitAtK = relevantRanks.isEmpty() ? 0.0 : 1.0;
+        double recallAtK = (double) relevantRanks.size() / tc.relevantSources().size();
+        double mrr = relevantRanks.isEmpty() ? 0.0 : 1.0 / relevantRanks.get(0);
+        
+        return new RetrievalMetrics(hitAtK, recallAtK, 0.0, mrr, 0.0, relevantRanks.size(), tc.relevantSources().size(), 
+                                    relevantRanks.isEmpty() ? null : relevantRanks.get(0));
+    }
+    
+    private boolean isRelevant(TestCase tc, RetrievedContext ctx) {
+        if (tc.relevantSources() == null || tc.relevantSources().isEmpty()) return false;
+
+        return tc.relevantSources().stream().anyMatch(src -> {
+            boolean isSameDoc = src.documentId().equals(ctx.documentId().toString());
+            if (!isSameDoc) return false;
+
+            boolean pageOverlap = false;
+            if (ctx.pageStart() != null && ctx.pageEnd() != null && src.pageStart() != null && src.pageEnd() != null) {
+                pageOverlap = (ctx.pageStart() <= src.pageEnd()) && (ctx.pageEnd() >= src.pageStart());
             }
 
-            double hitAtK = relevantRanks.isEmpty() ? 0.0 : 1.0;
-            double recallAtK = (double) relevantRanks.size() / tc.relevantSources().size();
-            double mrr = relevantRanks.isEmpty() ? 0.0 : 1.0 / relevantRanks.get(0);
-            
-            // NDCG tính toán hơi phức tạp hơn, bạn có thể implement công thức đơn giản hoặc để sau
-            return new RetrievalMetrics(hitAtK, recallAtK, 0.0, mrr, 0.0, relevantRanks.size(), tc.relevantSources().size(), 
-                                        relevantRanks.isEmpty() ? null : relevantRanks.get(0));
-        }
-                private boolean isRelevant(TestCase tc, RetrievedContext ctx) {
-            if (tc.relevantSources() == null || tc.relevantSources().isEmpty()) return false;
+            boolean sectionMatch = false;
+            if (ctx.section() != null && src.section() != null) {
+                String ctxSec = ctx.section().toLowerCase(Locale.ROOT).trim();
+                String srcSec = src.section().toLowerCase(Locale.ROOT).trim();
+                sectionMatch = ctxSec.contains(srcSec) || srcSec.contains(srcSec);
+            }
 
-            return tc.relevantSources().stream().anyMatch(src -> {
-                // 1. Phải trùng Document ID
-                boolean isSameDoc = src.documentId().equals(ctx.documentId().toString());
-                if (!isSameDoc) return false;
+            return pageOverlap || sectionMatch;
+        });
+    }
 
-                // 2. Overlap số trang
-                boolean pageOverlap = false;
-                if (ctx.pageStart() != null && ctx.pageEnd() != null && src.pageStart() != null && src.pageEnd() != null) {
-                    pageOverlap = (ctx.pageStart() <= src.pageEnd()) && (ctx.pageEnd() >= src.pageStart());
-                }
-
-                // 3. Match Section
-                boolean sectionMatch = false;
-                if (ctx.section() != null && src.section() != null) {
-                    String ctxSec = ctx.section().toLowerCase(Locale.ROOT).trim();
-                    String srcSec = src.section().toLowerCase(Locale.ROOT).trim();
-                    sectionMatch = ctxSec.contains(srcSec) || srcSec.contains(ctxSec);
-                }
-
-                return pageOverlap || sectionMatch;
-            });
-}
     public record BenchmarkConfig(
             String strategy,
             String embeddingModel,

@@ -125,6 +125,10 @@ public class BenchmarkResult {
     @PrePersist
     void onCreate() {
         createdAt = Instant.now();
+        // Nếu id chưa được gán, tạo một UUID mới
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
     }
 
     // --- GETTERS & SETTERS ---
