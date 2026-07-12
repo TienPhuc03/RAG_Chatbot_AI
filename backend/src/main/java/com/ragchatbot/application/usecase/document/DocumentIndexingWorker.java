@@ -111,9 +111,15 @@ public class DocumentIndexingWorker {
 
             vectorStoreService.upsert(document.getId(), embeddingModel, chunkingStrategy, drafts, embeddings);
             vectorsUpserted = true;
+
             List<Chunk> chunks = new ArrayList<>(drafts.size());
             for (ChunkDraft draft : drafts) {
-                UUID chunkId = chunkId(document.getId(), draft.chunkIndex());
+                UUID chunkId = chunkId(
+                     document.getId(),
+                     embeddingModel,
+                     chunkingStrategy,
+                     draft.chunkIndex()
+            );
 
                 Chunk chunk = new Chunk();
                 chunk.setId(chunkId);
@@ -172,7 +178,19 @@ public class DocumentIndexingWorker {
         }
     }
 
-    private UUID chunkId(UUID documentId, int chunkIndex) {
-        return UUID.nameUUIDFromBytes((documentId + ":" + chunkIndex).getBytes(StandardCharsets.UTF_8));
-    }
+            private UUID chunkId(
+                UUID documentId,
+                EmbeddingModel embeddingModel,
+                ChunkingStrategy chunkingStrategy,
+                int chunkIndex
+        ) {
+            String raw = documentId
+                    + ":" + embeddingModel.name()
+                    + ":" + chunkingStrategy.name()
+                    + ":" + chunkIndex;
+
+            return UUID.nameUUIDFromBytes(
+                    raw.getBytes(StandardCharsets.UTF_8)
+            );
+        }
 }

@@ -244,29 +244,31 @@ public class QdrantVectorStoreService implements VectorStoreService {
         return filterBuilder.getMustCount() == 0 ? null : filterBuilder.build();
     }
 
-    private RetrievedContext toRetrievedContext(ScoredPoint point) {
+        private RetrievedContext toRetrievedContext(ScoredPoint point) {
         Map<String, Value> payload = point.getPayloadMap();
+
         UUID chunkId = uuidValue(payload, PAYLOAD_CHUNK_ID);
         UUID documentId = uuidValue(payload, PAYLOAD_DOCUMENT_ID);
+
+        // Trường hợp payload cũ chưa có chunk_id thì lấy UUID của point Qdrant.
         if (chunkId == null && point.hasId() && point.getId().hasUuid()) {
             chunkId = UUID.fromString(point.getId().getUuid());
         }
 
         return new RetrievedContext(
-                documentId, 
-                chunkId,
+                chunkId,       // Tham số 1: chunkId
+                documentId,    // Tham số 2: documentId
                 stringValue(payload, PAYLOAD_CONTENT),
                 (double) point.getScore(),
                 stringValue(payload, PAYLOAD_COURSE_CODE),
                 stringValue(payload, PAYLOAD_CHAPTER_CODE),
                 stringValue(payload, PAYLOAD_SOURCE_FILE_NAME),
                 integerValue(payload, PAYLOAD_PAGE_NUMBER),
-                null, // pageStart
-                null, // pageEnd
-                null  // section
+                integerValue(payload, PAYLOAD_PAGE_NUMBER), // pageStart tạm dùng pageNumber
+                integerValue(payload, PAYLOAD_PAGE_NUMBER), // pageEnd tạm dùng pageNumber
+                null                                        // section chưa có metadata
         );
     }
-
     private UUID pointId(UUID documentId,EmbeddingModel embeddingModel, ChunkingStrategy chunkingStrategy, int chunkIndex) {
         String raw = documentId
                     + ":" + embeddingModel.name()
