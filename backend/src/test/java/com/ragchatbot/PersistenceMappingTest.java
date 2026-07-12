@@ -180,8 +180,8 @@ class PersistenceMappingTest extends PostgresIntegrationTestSupport {
         var summaries = benchmarkResultRepository.findAverageMetricsByStrategyAndModel();
 
         assertThat(summaries).hasSize(1);
-        assertThat(summaries.getFirst().chunkingStrategy()).isEqualTo("SEMANTIC");
-        assertThat(summaries.getFirst().embeddingModel()).isEqualTo("BGE_M3");
+        assertThat(summaries.getFirst().chunkingStrategy()).isEqualTo(ChunkingStrategy.SEMANTIC);
+        assertThat(summaries.getFirst().embeddingModel()).isEqualTo(EmbeddingModel.BGE_M3);  
         assertThat(summaries.getFirst().runCount()).isEqualTo(2);
         assertThat(summaries.getFirst().fallbackRunCount()).isEqualTo(1);
         assertThat(summaries.getFirst().ragasRunCount()).isEqualTo(1);

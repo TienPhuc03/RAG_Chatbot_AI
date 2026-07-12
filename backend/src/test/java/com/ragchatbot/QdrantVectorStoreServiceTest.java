@@ -129,17 +129,41 @@ class QdrantVectorStoreServiceTest {
         verify(qdrantClient, never()).upsertAsync(anyString(), any(List.class), any());
     }
 
-    @Test
-    void searchMapsScoredPointToRetrievedContext() throws Exception {
+        @Test
+        void searchMapsScoredPointToRetrievedContext() throws Exception {
+        UUID expectedChunkId = UUID.randomUUID();
+        UUID expectedDocumentId = UUID.randomUUID();
+
         ScoredPoint scoredPoint = ScoredPoint.newBuilder()
                 .setScore(0.91f)
-                .putPayload("chunk_id", io.qdrant.client.ValueFactory.value(UUID.randomUUID().toString()))
-                .putPayload("document_id", io.qdrant.client.ValueFactory.value(UUID.randomUUID().toString()))
-                .putPayload("content", io.qdrant.client.ValueFactory.value("Cau tra loi"))
-                .putPayload("course_code", io.qdrant.client.ValueFactory.value("JAVA101"))
-                .putPayload("chapter_code", io.qdrant.client.ValueFactory.value("CH1"))
-                .putPayload("source_file_name", io.qdrant.client.ValueFactory.value("java101.pdf"))
-                .putPayload("page_number", io.qdrant.client.ValueFactory.value(7L))
+                .putPayload(
+                        "chunk_id",
+                        io.qdrant.client.ValueFactory.value(expectedChunkId.toString())
+                )
+                .putPayload(
+                        "document_id",
+                        io.qdrant.client.ValueFactory.value(expectedDocumentId.toString())
+                )
+                .putPayload(
+                        "content",
+                        io.qdrant.client.ValueFactory.value("Cau tra loi")
+                )
+                .putPayload(
+                        "course_code",
+                        io.qdrant.client.ValueFactory.value("JAVA101")
+                )
+                .putPayload(
+                        "chapter_code",
+                        io.qdrant.client.ValueFactory.value("CH1")
+                )
+                .putPayload(
+                        "source_file_name",
+                        io.qdrant.client.ValueFactory.value("java101.pdf")
+                )
+                .putPayload(
+                        "page_number",
+                        io.qdrant.client.ValueFactory.value(7L)
+                )
                 .build();
 
         when(qdrantClient.searchAsync(any(SearchPoints.class), any()))
@@ -156,14 +180,24 @@ class QdrantVectorStoreServiceTest {
         );
 
         assertThat(contexts).hasSize(1);
-        assertThat(contexts.getFirst().content()).isEqualTo("Cau tra loi");
-        assertThat(contexts.getFirst().score()).isCloseTo(0.91d, Offset.offset(0.00001d));
-        assertThat(contexts.getFirst().courseCode()).isEqualTo("JAVA101");
-        assertThat(contexts.getFirst().chapterCode()).isEqualTo("CH1");
-        assertThat(contexts.getFirst().sourceFileName()).isEqualTo("java101.pdf");
-        assertThat(contexts.getFirst().pageNumber()).isEqualTo(7);
-    }
 
+        RetrievedContext context = contexts.getFirst();
+
+        // Hai assertion quan trọng nhất.
+        assertThat(context.chunkId()).isEqualTo(expectedChunkId);
+        assertThat(context.documentId()).isEqualTo(expectedDocumentId);
+
+        assertThat(context.content()).isEqualTo("Cau tra loi");
+        assertThat(context.score())
+                .isCloseTo(0.91d, Offset.offset(0.00001d));
+        assertThat(context.courseCode()).isEqualTo("JAVA101");
+        assertThat(context.chapterCode()).isEqualTo("CH1");
+        assertThat(context.sourceFileName()).isEqualTo("java101.pdf");
+        assertThat(context.pageNumber()).isEqualTo(7);
+        assertThat(context.pageStart()).isEqualTo(7);
+        assertThat(context.pageEnd()).isEqualTo(7);
+        }
+        
     @Test
     void deleteByDocumentIdBuildsDeleteFilter() {
         UUID documentId = UUID.randomUUID();
