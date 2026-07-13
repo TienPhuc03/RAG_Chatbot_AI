@@ -5,7 +5,9 @@ export function fetchConversations() {
 }
 
 export function fetchChatHistory(sessionId) {
-  return request(`/api/chat/history/${sessionId}`);
+  return request(
+    `/api/chat/history/${encodeURIComponent(sessionId)}`
+  );
 }
 
 export function sendMessage(payload) {
@@ -16,32 +18,62 @@ export function sendMessage(payload) {
 }
 
 export function fetchChatAttachments(sessionId) {
-  return request(`/api/chat/attachments/${sessionId}`);
+  return request(
+    `/api/chat/attachments/${encodeURIComponent(sessionId)}`
+  );
 }
 
 export async function uploadChatAttachment(payload) {
   const formData = new FormData();
-  if (payload.sessionId) {
-    formData.append("sessionId", payload.sessionId);
-  }
-  formData.append("file", payload.file);
 
-  const response = await fetch("/api/chat/attachments", {
-    method: "POST",
-    body: formData,
-  });
+  if (payload.sessionId) {
+    formData.append(
+      "sessionId",
+      payload.sessionId
+    );
+  }
+
+  if (payload.embeddingModel) {
+    formData.append(
+      "embeddingModel",
+      payload.embeddingModel
+    );
+  }
+
+  formData.append(
+    "file",
+    payload.file
+  );
+
+  const response = await fetch(
+    "/api/chat/attachments",
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
 
   if (!response.ok) {
-    let message = "Upload tệp thất bại.";
+    let message =
+      "Upload tệp thất bại.";
+
     try {
-      const body = await response.json();
-      message = body.message || body.error || message;
+      const body =
+        await response.json();
+
+      message =
+        body.message
+        || body.error
+        || message;
     } catch (error) {
-      const text = await response.text();
+      const text =
+        await response.text();
+
       if (text) {
         message = text;
       }
     }
+
     throw new Error(message);
   }
 
